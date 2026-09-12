@@ -1,0 +1,34 @@
+INSTALLATION — HNR CONSULTING / GITHUB PAGES
+
+Structure à conserver exactement dans le dépôt wpa :
+
+index.html
+formation/index.html
+traduction/index.html
+manager/index.html
+contact/index.html
+inscription/index.html
+devis/index.html
+admin/index.html
+verify/index.html
+.nojekyll
+
+IMPORTANT
+- Tous les dossiers sont volontairement en minuscules.
+- Chaque sous-dossier contient son propre index.html. C'est normal et nécessaire pour obtenir des URL propres.
+- Le fichier index.html de la racine est le fichier principal (environ 4,8 Mo).
+- Les index.html des sous-dossiers sont de petits lanceurs qui renvoient vers la racine avec le bon identifiant de page.
+- Ne renommez pas index.html en Index.html : GitHub Pages respecte la casse.
+
+URL attendues :
+https://hnrconsulting.github.io/wpa/
+https://hnrconsulting.github.io/wpa/formation/
+https://hnrconsulting.github.io/wpa/traduction/
+https://hnrconsulting.github.io/wpa/manager/
+https://hnrconsulting.github.io/wpa/contact/
+https://hnrconsulting.github.io/wpa/inscription/
+https://hnrconsulting.github.io/wpa/devis/
+https://hnrconsulting.github.io/wpa/admin/
+https://hnrconsulting.github.io/wpa/verify/
+
+Le dépôt GitHub doit publier la branche main depuis la racine /.
