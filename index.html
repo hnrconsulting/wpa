@@ -2241,13 +2241,15 @@ function calculateDevis(){
   var totalHT=c.documents.reduce(function(a,d){return a+d.total;},0);
   var normalDays=totalPages?Math.ceil(totalPages/10):0;
   var requestedDays=dateDiffDays(date);
-  var urgentDays=(date && requestedDays!==null && requestedDays>=0)?Math.max(0,normalDays-requestedDays):0;
-  var surchargePct=urgentDays*10;
-  var surcharge=Math.round(totalHT*surchargePct/100);
-  var htWithSurcharge=totalHT+surcharge;
-  var tps=Math.round(htWithSurcharge*0.095);
-  var ttc=htWithSurcharge+tps;
-  return {documents:c.documents,totalPages:totalPages,totalHT:totalHT,normalDays:normalDays,requestedDays:requestedDays,urgentDays:urgentDays,surchargePct:surchargePct,surcharge:surcharge,ht:htWithSurcharge,tps:tps,ttc:ttc,complete:c.ok};
+  /* Le délai de livraison reste une information du devis, mais n'entraîne
+     désormais aucune majoration. Le tarif affiché ici est donc exactement
+     celui repris dans le PDF : somme des tarifs par page + TPS 9,5 %. */
+  var surchargePct=0;
+  var surcharge=0;
+  var htWithSurcharge=totalHT;
+  var tps=Math.round(totalHT*0.095);
+  var ttc=totalHT+tps;
+  return {documents:c.documents,totalPages:totalPages,totalHT:totalHT,normalDays:normalDays,requestedDays:requestedDays,urgentDays:0,surchargePct:0,surcharge:0,ht:htWithSurcharge,tps:tps,ttc:ttc,complete:c.ok};
 }
 function updateDevisPricing(){
   var box=document.getElementById('devisPriceDetails'), hint=document.getElementById('devisPricingHint'); if(!box)return;
@@ -2262,7 +2264,6 @@ function updateDevisPricing(){
     var unknown=calc.documents.some(function(d){return d.nature && !d.rate;})?'<div class="devis-price-warning">Précisez la nature de chaque document pour permettre le calcul automatique du tarif.</div>':'';
     box.innerHTML=rows+
       '<div class="devis-price-line devis-price-subtotal"><span>Total HT</span><b>'+formatCFAPlain(calc.ht)+'</b></div>'+
-      (calc.surcharge>0?'<div class="devis-price-line"><span>Ajustement tarifaire</span><b>+'+formatCFAPlain(calc.surcharge)+'</b></div>':'')+
       '<div class="devis-price-line"><span>TPS 9,5%</span><b>'+formatCFAPlain(calc.tps)+'</b></div>'+
       '<div class="devis-price-line devis-price-total"><span>Total TTC</span><b>'+formatCFAPlain(calc.ttc)+'</b></div>'+dateWarning+unknown;
   }
@@ -2481,8 +2482,7 @@ function downloadDevisPdf(data){
     text('MODALITÉS DE RÈGLEMENT',ML+7,y+10,7.6,BLUE,'bold');
     text("Paiement minimum de 50% à la confirmation de l'offre et le reste à la livraison.",ML+7,y+19,6.8,DARK,'normal',null,split-14);
     text('MODE DE PAIEMENT',ML+7,y+34,7.6,BLUE,'bold');
-    text('Espèces, chèque, virement bancaire ou mobile money à l’ordre de M.',ML+7,y+43,6.7,DARK,'normal',null,split-14);
-    text('HOUGANGOYE NGOUAMBILA Rodolphe',ML+7,y+54,6.9,DARK,'bold',null,split-14);
+    text('Paiement en espèces, par mobile money, par virement bancaire ou par chèque à l’ordre de Monsieur HOUGANGOYE NGOUAMBILA Rodolphe',ML+7,y+44,6.4,DARK,'normal',null,split-14);
 
     var qr=drawDevisQr(qrPayloadForDevis(d));
     var ax=ML+split+7, aw=TW-split-14;
@@ -2491,18 +2491,13 @@ function downloadDevisPdf(data){
     text('QR de vérification',ax+aw/2,y+51,6.5,MUTED,'italic','center',aw);
     text('Code : '+(d.authCode||'—'),ax+aw/2,y+59,6.7,RED,'bold','center',aw);
 
-    y+=72;
-    text('VALIDITÉ DU DEVIS',ML,y+6,7.3,BLUE,'bold');
-    text('Ce devis est valable 7 jours à compter de sa date de création. La confirmation de l’offre vaut acceptation des conditions de règlement indiquées ci-dessus.',ML,y+14,6.6,MUTED,'normal',null,TW);
-    text('Devis généré automatiquement par HNR Consulting • Formation et Traduction',W/2,y+25,6.3,MUTED,'italic','center',TW);
-
-    // Final footer pass: no duplicated company information. Add only the legal/commercial notice in red.
+    /* Aucun bloc de validité ni autre information textuelle n'est conservé en bas de page.
+       Le pied de page est réservé à une seule mention rouge, homogène et sans surcharge. */
     var totalPages=doc.getNumberOfPages();
     for(var pn=1;pn<=totalPages;pn++){
       doc.setPage(pn);
-      var footerText='Ce devis a été généré automatiquement sur notre site à partir des informations fournies par le client. Les montants indiqués sont estimatifs et peuvent varier après évaluation réelle des documents.';
-      text(footerText,W/2,284.5,6.0,RED,'normal','center',TW-6);
-      text('Page '+pn+' / '+totalPages,W-MR,291,5.8,MUTED,'normal','right');
+      var footerText='Document généré automatiquement. Les montants sont exprimés à titre indicatif. Les montants réels peuvent varier après évaluation des documents.';
+      text(footerText,W/2,285,6.2,RED,'normal','center',TW-8);
     }
     var pdfFilename='Devis_HNR_'+d.quoteNo+'_'+(d.nom||'client').replace(/[^a-z0-9]+/gi,'_')+'.pdf';
     savePdfBlobLocally(doc,pdfFilename);
