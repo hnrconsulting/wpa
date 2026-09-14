@@ -2187,6 +2187,12 @@ function getQuoteNumber(){
 function getTodayISO(){
   var d=new Date(); var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day;
 }
+function addDaysISO(iso,days){
+  var p=String(iso||'').split('-').map(Number);
+  if(p.length!==3 || p.some(isNaN)) return '';
+  var d=new Date(p[0],p[1]-1,p[2]); d.setDate(d.getDate()+Number(days||0));
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function dateDiffDays(iso){
   if(!iso)return null;
   var p=iso.split('-').map(Number); if(p.length!==3||p.some(isNaN))return null;
@@ -2299,7 +2305,7 @@ function submitDevis(e){
   var calc=calculateDevis();
   var quoteNo=getQuoteNumber();
   var quoteDate=getTodayISO();
-  var d={quoteNo:quoteNo,quoteDate:quoteDate,nom:document.getElementById('d_nom').value.trim(),societe:document.getElementById('d_societe').value.trim(),tel:document.getElementById('d_tel').value.trim(),email:document.getElementById('d_email').value.trim(),adresse:document.getElementById('d_adresse').value.trim(),langues:document.getElementById('d_langues').value.trim(),date:date,message:document.getElementById('d_message').value.trim(),documents:calc.documents,totalPages:calc.totalPages,totalHT:calc.ht,tps:calc.tps,ttc:calc.ttc,surcharge:calc.surcharge,surchargePct:calc.surchargePct};
+  var d={quoteNo:quoteNo,quoteDate:quoteDate,quoteValidUntil:addDaysISO(quoteDate,7),authCode:randomCode(),nom:document.getElementById('d_nom').value.trim(),societe:document.getElementById('d_societe').value.trim(),tel:document.getElementById('d_tel').value.trim(),email:document.getElementById('d_email').value.trim(),adresse:document.getElementById('d_adresse').value.trim(),langues:document.getElementById('d_langues').value.trim(),date:date,message:document.getElementById('d_message').value.trim(),documents:calc.documents,totalPages:calc.totalPages,totalHT:calc.ht,tps:calc.tps,ttc:calc.ttc,surcharge:calc.surcharge,surchargePct:calc.surchargePct};
   lastDevis=d;
   try{localStorage.setItem('hnr_devis_'+quoteNo,JSON.stringify(d));}catch(err){}
   document.getElementById('devisMeta').innerHTML='<div><span>Devis Nº</span><b>'+escapeHtml(quoteNo)+'</b></div><div><span>Client(e)</span><b>'+escapeHtml(d.nom)+'</b></div><div><span>Total TTC</span><b>'+formatCFAPlain(d.ttc)+'</b></div>';
@@ -2311,8 +2317,8 @@ function submitDevis(e){
 }
 
 function qrPayloadForDevis(d){
-  var payload={v:1,type:'devis',numero:d.quoteNo,date:d.quoteDate,client:d.nom,societe:d.societe||'',adresse:d.adresse,tel:d.tel,email:d.email,langues:d.langues,livraison:d.date,documents:d.documents.map(function(x){return {nature:x.nature,pages:x.pages,prixUnitaire:x.rate,total:x.total};}),totalHT:d.totalHT,tps:d.tps,totalTTC:d.ttc,note:d.message||''};
-  try{return 'HNRD|'+btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}catch(e){return 'HNRD|'+d.quoteNo;}
+  var payload={v:2,type:'devis',numero:d.quoteNo,authCode:d.authCode||'',date:d.quoteDate,validite:d.quoteValidUntil||'',client:d.nom,societe:d.societe||'',adresse:d.adresse,tel:d.tel,email:d.email,langues:d.langues,livraison:d.date,documents:d.documents.map(function(x){return {nature:x.nature,pages:x.pages,prixUnitaire:x.rate,total:x.total};}),totalHT:d.totalHT,tps:d.tps,totalTTC:d.ttc,note:d.message||''};
+  try{return 'HNRD|'+btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}catch(e){return 'HNRD|'+d.quoteNo+'|'+(d.authCode||'');}
 }
 function decodeBase64Url(s){try{var b64=s.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4)b64+='=';return JSON.parse(decodeURIComponent(escape(atob(b64))));}catch(e){return null;}}
 function drawDevisQr(payload){
@@ -2360,68 +2366,147 @@ function savePdfBlobLocally(doc, filename){
 
 function downloadDevisPdf(data){
   var d=data||lastDevis; if(!d){showToast('Veuillez d’abord renseigner le formulaire.');return;}
-  if(!window.jspdf||!window.jspdf.jsPDF){showToast('Génération PDF indisponible.');return;}
+  if(!window.jspdf||!window.jspdf.jsPDF){showToast('Génération PDF indisponible : la bibliothèque PDF locale n’est pas chargée.');return;}
   try{
-    var jsPDF=window.jspdf.jsPDF, doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'}), W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
-    var BLUE=[17,76,147], RED=[237,27,36], TEXT=[17,76,147], LIGHT=[244,244,244], WHITE=[255,255,255], LINE=[255,255,255];
+    var jsPDF=window.jspdf.jsPDF;
+    var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+    var W=210,H=297,ML=15,MR=15,TW=W-ML-MR;
+    var BLUE=[0,74,147], RED=[237,27,36], DARK=[35,47,62], MUTED=[86,99,114], LIGHT=[244,247,250], LINE=[211,220,229], WHITE=[255,255,255];
     registerMontserratForPdf(doc);
-    var ML=60.5, MR=535, TW=MR-ML, c1=197, c2=81, c3=79, c4=TW-c1-c2-c3;
-    var logo=document.querySelector('.brand img'); if(logo&&logo.src){try{doc.addImage(logo.src,'PNG',60,32,72,72);}catch(e){}}
-    pdfText(doc,'HNR Consulting',133,51,14,BLUE,'bold'); pdfText(doc,'Traduction & Formation',254,51,13,BLUE,'italic');
-    pdfText(doc,'NIF : 202402006021 T   —   RCCM : GA-LBV-01-2024-A10-02198',133,67,8.7,BLUE); pdfText(doc,'Tél : +241 74 14 70 51   —   Émail : contact.hnrconsulting@gmail.com',133,85,8.7,BLUE);
-    pdfText(doc,'Client (e) :',301,134,12,BLUE,'bold'); pdfText(doc,d.nom,301,153,9.5,BLUE,'normal',null,220); pdfText(doc,'Adresse :',301,170,9.5,BLUE); pdfText(doc,d.adresse,360,170,9.5,BLUE,'normal',null,175); pdfText(doc,'Téléphone :',301,188,9.5,BLUE); pdfText(doc,d.tel,360,188,9.5,BLUE); pdfText(doc,'Email  :',301,206,9.5,BLUE); pdfText(doc,d.email,360,206,9.5,BLUE,'normal',null,175);
-    pdfText(doc,'Devis N° :',60,213,12,BLUE,'bold'); pdfText(doc,d.quoteNo,60,231,9.5,BLUE,'bold'); pdfText(doc,'Date :',60,248,9.5,BLUE); pdfText(doc,formatDateFR(d.quoteDate),108,248,9.5,BLUE);
-    var lang=d.langues.toUpperCase();
-    pdfText(doc,'TRADUCTION DE DOCUMENTS ['+lang+']',W/2,282,10.8,BLUE,'normal','center',TW);
-    var y=295, headerH=40;
-    doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(ML,y,TW,headerH,'F');
-    [ML+c1,ML+c1+c2,ML+c1+c2+c3].forEach(function(x){doc.setDrawColor(WHITE[0],WHITE[1],WHITE[2]);doc.setLineWidth(1);doc.line(x,y,x,y+headerH);});
-    pdfText(doc,'NATURE DU DOCUMENT',ML+c1/2,y+25,9.2,WHITE,'bold','center'); pdfText(doc,'PRIX U.',ML+c1+c2/2,y+25,9.2,WHITE,'bold','center'); pdfText(doc,'QTÉ',ML+c1+c2+c3/2,y+25,9.2,WHITE,'bold','center'); pdfText(doc,'TOTAL',ML+c1+c2+c3+c4/2,y+25,9.2,WHITE,'bold','center');
-    var rowH=42, gap=34, tableY=y+headerH, pageRows=3;
-    function drawRow(row,ry,idx){
-      doc.setFillColor(LIGHT[0],LIGHT[1],LIGHT[2]);doc.rect(ML,ry,TW,rowH,'F');
-      [ML+c1,ML+c1+c2,ML+c1+c2+c3].forEach(function(x){doc.setDrawColor(WHITE[0],WHITE[1],WHITE[2]);doc.line(x,ry,x,ry+rowH);});
-      pdfText(doc,row.nature,ML+8,ry+25,8.1,BLUE,'normal',null,c1-16); pdfText(doc,formatCFAPlain(row.rate),ML+c1+c2/2,ry+25,7.7,BLUE,'normal','center'); pdfText(doc,String(row.pages),ML+c1+c2+c3/2,ry+25,8.2,BLUE,'normal','center'); pdfText(doc,formatCFAPlain(row.total),ML+c1+c2+c3+c4-8,ry+25,7.7,BLUE,'normal','right');
+    function setFont(style,size,color){
+      /* Robust vector text: Helvetica handles French characters consistently;
+         the bundled HNR Montserrat font is reserved for italic brand accents. */
+      var useStyle=style||'normal';
+      if(useStyle==='italic' && window.HNRMontserratTTF){try{doc.setFont('Montserrat','italic');}catch(e){doc.setFont('helvetica','italic');}}
+      else doc.setFont('helvetica',useStyle==='bold'?'bold':'normal');
+      doc.setFontSize(size||9);var c=color||DARK;doc.setTextColor(c[0],c[1],c[2]);
     }
-    var rows=d.documents||[];
-    for(var i=0;i<Math.min(pageRows,rows.length);i++)drawRow(rows[i],tableY+i*(rowH+gap),i);
-    if(rows.length>pageRows){
-      // Continue additional documents on following pages while retaining the same table columns.
-      var idx=pageRows;
-      while(idx<rows.length){
-        doc.addPage();
-        doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(0,0,W,9,'F');
-        pdfText(doc,'TRADUCTION DE DOCUMENTS — SUITE',W/2,38,12,BLUE,'bold','center');
-        var sy=58; doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(ML,sy,TW,34,'F');
-        [ML+c1,ML+c1+c2,ML+c1+c2+c3].forEach(function(x){doc.setDrawColor(255,255,255);doc.line(x,sy,x,sy+34);});
-        pdfText(doc,'NATURE DU DOCUMENT',ML+c1/2,sy+22,8.7,WHITE,'bold','center');pdfText(doc,'PRIX U.',ML+c1+c2/2,sy+22,8.7,WHITE,'bold','center');pdfText(doc,'QTÉ',ML+c1+c2+c3/2,sy+22,8.7,WHITE,'bold','center');pdfText(doc,'TOTAL',ML+c1+c2+c3+c4/2,sy+22,8.7,WHITE,'bold','center');
-        var yy=sy+34,count=0;while(idx<rows.length && count<12){drawRow(rows[idx],yy,count);idx++;count++;yy+=rowH+6;}
+    function text(str,x,y,size,color,style,align,maxW){
+      setFont(style,size,color);
+      var value=String(str||'');
+      var lines=maxW?doc.splitTextToSize(value,maxW):value.split('\n');
+      doc.text(lines,x,y,align?{align:align}:undefined); return lines.length;
+    }
+    function money(n){return formatCFAPlain(n);}
+    function box(x,y,w,h,fill,stroke,r){
+      if(fill)doc.setFillColor(fill[0],fill[1],fill[2]);
+      if(stroke){doc.setDrawColor(stroke[0],stroke[1],stroke[2]);doc.setLineWidth(.35);}
+      doc.roundedRect(x,y,w,h,r||1.5,r||1.5,fill&&stroke?'FD':fill?'F':'S');
+    }
+    function line(x1,y1,x2,y2,color,w){var c=color||LINE;doc.setDrawColor(c[0],c[1],c[2]);doc.setLineWidth(w||.35);doc.line(x1,y1,x2,y2);}
+    function pageFooter(pageNo,total){
+      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(0,292,W,5,'F');
+      text('HNR Consulting',ML,286.5,7.1,BLUE,'bold');
+      text('Formation et Traduction',49,286.5,6.8,MUTED,'italic');
+      text('Tél : +241 74 14 70 51  •  contact.hnrconsulting@gmail.com',W/2,286.5,6.0,MUTED,'normal','center',100);
+      text('Page '+pageNo+' / '+total,W-MR,286.5,6.0,MUTED,'normal','right');
+    }
+    function header(){
+      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(0,0,W,3,'F');
+      var logo=document.querySelector('.brand img');
+      if(logo&&logo.src){try{doc.addImage(logo.src,'PNG',ML,9,25,25);}catch(e){}}
+      text('HNR Consulting',45,15,15.5,BLUE,'bold');
+      text('Formation et Traduction',45,22,8.8,BLUE,'italic');
+      text('Tél : +241 74 14 70 51',195,12,6.8,DARK,'normal','right');
+      text('Émail : contact.hnrconsulting@gmail.com',195,17,6.8,DARK,'normal','right');
+      text('NIF : 202402006021 T',195,22,6.8,MUTED,'normal','right');
+      text('RCCM : GA-LBV-01-2024-A10-02198',195,27,6.8,MUTED,'normal','right');
+      line(ML,39,W-MR,39,BLUE,1.1);line(ML,40.2,W-MR,40.2,RED,.35);
+    }
+    function drawClientMeta(){
+      box(ML,45,TW,33,LIGHT,LINE,2);
+      text('DEVIS',ML+6,53,11.5,BLUE,'bold');
+      text('N° '+d.quoteNo,ML+6,61,8.2,DARK,'bold');
+      text('Créé le : '+formatDateFR(d.quoteDate),ML+6,68,7.0,MUTED);
+      text('Valable jusqu’au : '+formatDateFR(d.quoteValidUntil),ML+6,74,7.0,MUTED);
+      text('CLIENT',92,53,7.0,BLUE,'bold');
+      text(d.nom+(d.societe?' — '+d.societe:''),92,61,8.2,DARK,'bold',null,103);
+      text('Adresse : '+d.adresse,92,67,6.8,MUTED,'normal',null,103);
+      text('Tél : '+d.tel,92,73,6.8,MUTED,'normal');
+      text('Email : '+d.email,145,73,6.8,MUTED,'normal','right',50);
+    }
+    function drawTitle(){
+      var title='TRADUCTION DE DOCUMENTS ['+String(d.langues||'').toUpperCase()+']';
+      text(title,W/2,89,10.7,BLUE,'bold','center',TW-4);
+      text('Objet du devis — estimation des prestations de traduction',W/2,95,6.8,MUTED,'italic','center',TW);
+    }
+    header();drawClientMeta();drawTitle();
+
+    var rows=d.documents||[], y=101;
+    var headerH=10,rowH=10,perPage=14,idx=0;
+    var col=[ML,ML+91,ML+124,ML+145,ML+TW];
+    function tableHeader(yy){
+      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(ML,yy,TW,headerH,'F');
+      [['Nature du document',col[0]+45.5],['Prix unitaire',col[1]+16.5],['Qté (pages)',col[2]+10.5],['Total',col[3]+32.5]].forEach(function(a){text(a[0],a[1],yy+6.7,6.8,WHITE,'bold','center');});
+      for(var i=1;i<col.length-1;i++){doc.setDrawColor(WHITE[0],WHITE[1],WHITE[2]);doc.setLineWidth(.35);doc.line(col[i],yy,col[i],yy+headerH);}
+    }
+    function drawTableRow(r,yy,alt){
+      doc.setFillColor(alt?248:255,alt?250:255,alt?252:255);doc.rect(ML,yy,TW,rowH,'F');
+      doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(.3);doc.rect(ML,yy,TW,rowH,'S');
+      for(var i=1;i<col.length-1;i++)doc.line(col[i],yy,col[i],yy+rowH);
+      text(r.nature,col[0]+3,yy+6.5,7.0,DARK,'normal',null,85);
+      text(money(r.rate),col[1]+30,yy+6.5,6.6,DARK,'normal','right');
+      text(String(r.pages),col[2]+10.5,yy+6.5,7.0,DARK,'normal','center');
+      text(money(r.total),col[4]-3,yy+6.5,6.6,BLUE,'bold','right');
+    }
+    tableHeader(y);y+=headerH;
+    while(idx<rows.length){
+      var count=0;
+      while(idx<rows.length && count<perPage){drawTableRow(rows[idx],y,count%2);y+=rowH;idx++;count++;}
+      if(idx<rows.length){
+        pageFooter(doc.getNumberOfPages(),doc.getNumberOfPages()+1);doc.addPage();header();
+        text('TRADUCTION DE DOCUMENTS — SUITE',W/2,48,9.5,BLUE,'bold','center');
+        y=55;tableHeader(y);y+=headerH;
       }
     }
-    // Totals/notes block on final page.
-    var blockY;
-    if(rows.length<=3) blockY=598; else blockY=H-185;
-    var noteW=185, rightX=ML+noteW, blockH=89;
-    doc.setFillColor(LIGHT[0],LIGHT[1],LIGHT[2]);doc.rect(ML,blockY,TW,blockH,'F');doc.setDrawColor(WHITE[0],WHITE[1],WHITE[2]);doc.line(rightX,blockY,rightX,blockY+blockH);
-    pdfText(doc,'Note du client :',ML+13,blockY+20,8.2,BLUE,'bold');
-    pdfText(doc,d.message||'—',ML+13,blockY+38,7.5,BLUE,'normal',null,noteW-25);
-    var rx=rightX+TW-noteW; pdfText(doc,'Total HT :',rightX+TW/2-10,blockY+20,8.8,BLUE,'normal','right');pdfText(doc,formatCFAPlain(d.totalHT),rightX+TW-10,blockY+20,8.8,BLUE,'normal','right');
-    pdfText(doc,'TPS 9,5% :',rightX+TW/2-10,blockY+38,8.8,BLUE,'normal','right');pdfText(doc,formatCFAPlain(d.tps),rightX+TW-10,blockY+38,8.8,BLUE,'normal','right');
-    pdfText(doc,'Remise :',rightX+TW/2-10,blockY+56,8.8,BLUE,'normal','right');pdfText(doc,'0 F CFA',rightX+TW-10,blockY+56,8.8,BLUE,'normal','right');
-    pdfText(doc,'TOTAL TTC :',rightX+TW/2,blockY+77,11.5,BLUE,'bold','center');pdfText(doc,formatCFAPlain(d.ttc),rightX+TW-10,blockY+77,10.5,RED,'bold','right');
-    var qr=drawDevisQr(qrPayloadForDevis(d)); if(qr)try{doc.addImage(qr,'PNG',81,blockY+105,105,105);}catch(e){}
-    var termsX=246, termsY=blockY+110;
-    pdfText(doc,'Modalités de Règlement',termsX,termsY,9.2,BLUE,'bold');
-    pdfText(doc,"Paiement minimum de 50% à la confirmation de l'offre\net le reste à la livraison.",termsX,termsY+17,7.7,BLUE,'normal',null,280);
-    pdfText(doc,'Mode de Paiement',termsX,termsY+59,9.2,BLUE,'bold');
-    pdfText(doc,'Paiement en espèces, par chèque, par virement\nbancaire ou par mobile money à l’ordre de M.',termsX,termsY+76,7.7,BLUE,'normal',null,280);
-    pdfText(doc,'HOUGANGOYE NGOUAMBILA Rodolphe',termsX,termsY+96,7.7,BLUE,'bold');
-    // Bottom brand bar, matching the supplied model.
-    doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(0,H-11,W,11,'F');
+
+    // Commercial summary and conditions are deliberately composed as vector/text,
+    // never captured as an image of the former quote model.
+    y=Math.max(y+7,137);
+    if(y>192){pageFooter(doc.getNumberOfPages(),doc.getNumberOfPages()+1);doc.addPage();header();text('DEVIS — CONDITIONS COMMERCIALES',W/2,48,9.5,BLUE,'bold','center');y=58;}
+
+    var leftW=112,rightW=TW-leftW-7;
+    box(ML,y,leftW,43,LIGHT,LINE,2);
+    text('NOTE DU CLIENT',ML+6,y+8,7.4,BLUE,'bold');
+    text(d.message||'Aucune note particulière.',ML+6,y+17,6.9,DARK,'normal',null,leftW-12);
+    text('Livraison souhaitée : '+formatDateFR(d.date),ML+6,y+36,6.8,MUTED,'normal',null,leftW-12);
+
+    var tx=ML+leftW+7,tw=rightW;
+    box(tx,y,tw,43,WHITE,LINE,2);
+    text('RÉCAPITULATIF',tx+6,y+8,7.4,BLUE,'bold');
+    text('Montant HT',tx+6,y+17,6.9,DARK);text(money(d.totalHT),tx+tw-6,y+17,6.9,DARK,'normal','right');
+    text('TPS 9,5 %',tx+6,y+25,6.9,DARK);text(money(d.tps),tx+tw-6,y+25,6.9,DARK,'normal','right');
+    doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.roundedRect(tx+4,y+29,tw-8,10,1.5,1.5,'F');
+    text('TOTAL TTC',tx+9,y+36,7.2,WHITE,'bold');text(money(d.ttc),tx+tw-9,y+36,7.7,WHITE,'bold','right');
+
+    y+=50;
+    var lowerH=65, split=118;
+    box(ML,y,TW,lowerH,WHITE,LINE,2);
+    line(ML+split,y+5,ML+split,y+lowerH-5,LINE,.35);
+    text('MODALITÉS DE RÈGLEMENT',ML+7,y+10,7.6,BLUE,'bold');
+    text("Paiement minimum de 50% à la confirmation de l'offre et le reste à la livraison.",ML+7,y+19,6.8,DARK,'normal',null,split-14);
+    text('MODE DE PAIEMENT',ML+7,y+34,7.6,BLUE,'bold');
+    text('Espèces, chèque, virement bancaire ou mobile money à l’ordre de M.',ML+7,y+43,6.7,DARK,'normal',null,split-14);
+    text('HOUGANGOYE NGOUAMBILA Rodolphe',ML+7,y+54,6.9,DARK,'bold',null,split-14);
+
+    var qr=drawDevisQr(qrPayloadForDevis(d));
+    var ax=ML+split+7, aw=TW-split-14;
+    if(qr){try{doc.addImage(qr,'PNG',ax+((aw-31)/2),y+7,31,31);}catch(e){}}
+    text('SIGNATURE ÉLECTRONIQUE',ax+aw/2,y+44,7.1,BLUE,'bold','center',aw);
+    text('QR de vérification',ax+aw/2,y+51,6.5,MUTED,'italic','center',aw);
+    text('Code : '+(d.authCode||'—'),ax+aw/2,y+59,6.7,RED,'bold','center',aw);
+
+    y+=72;
+    text('VALIDITÉ DU DEVIS',ML,y+6,7.3,BLUE,'bold');
+    text('Ce devis est valable 7 jours à compter de sa date de création. La confirmation de l’offre vaut acceptation des conditions de règlement indiquées ci-dessus.',ML,y+14,6.6,MUTED,'normal',null,TW);
+    text('Devis généré automatiquement par HNR Consulting • Formation et Traduction',W/2,y+25,6.3,MUTED,'italic','center',TW);
+
+    // Final footer pass after all pages have been created.
+    for(var pn=1;pn<=doc.getNumberOfPages();pn++){doc.setPage(pn);pageFooter(pn,doc.getNumberOfPages());}
     var pdfFilename='Devis_HNR_'+d.quoteNo+'_'+(d.nom||'client').replace(/[^a-z0-9]+/gi,'_')+'.pdf';
     savePdfBlobLocally(doc,pdfFilename);
     showToast('Le devis PDF n° '+d.quoteNo+' a été téléchargé.');
-  }catch(err){console.error(err);showToast('Une erreur est survenue lors de la génération du devis PDF.');}
+  }catch(err){console.error('Devis PDF error',err);showToast('Une erreur est survenue lors de la génération du devis PDF.');}
 }
 
 /* ===================== CONTACT ===================== */
@@ -2535,6 +2620,8 @@ function renderVerifiedDevis(q){
   out.innerHTML='<div class="verify-result verify-ok"><b style="color:#1b8a4c;">&#10003; Devis HNR Consulting authentifié</b><div class="result-meta">'+
     '<div><span>Devis Nº</span><b>'+escapeHtml(q.numero)+'</b></div>'+
     '<div><span>Client(e)</span><b>'+escapeHtml(q.client||'')+'</b></div>'+
+    '<div><span>Code d’authentification</span><b>'+escapeHtml(q.authCode||'—')+'</b></div>'+
+    '<div><span>Validité</span><b>'+escapeHtml(formatDateFR(q.validite||''))+'</b></div>'+
     '<div><span>Adresse</span><b>'+escapeHtml(q.adresse||'')+'</b></div>'+
     '<div><span>Téléphone</span><b>'+escapeHtml(q.tel||'')+'</b></div>'+
     '<div><span>Email</span><b>'+escapeHtml(q.email||'')+'</b></div>'+docs+
