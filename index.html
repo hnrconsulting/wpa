@@ -2395,23 +2395,18 @@ function downloadDevisPdf(data){
     }
     function line(x1,y1,x2,y2,color,w){var c=color||LINE;doc.setDrawColor(c[0],c[1],c[2]);doc.setLineWidth(w||.35);doc.line(x1,y1,x2,y2);}
     function pageFooter(pageNo,total){
-      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(0,292,W,5,'F');
-      text('HNR Consulting',ML,286.5,7.1,BLUE,'bold');
-      text('Formation et Traduction',49,286.5,6.8,MUTED,'italic');
-      text('Tél : +241 74 14 70 51  •  contact.hnrconsulting@gmail.com',W/2,286.5,6.0,MUTED,'normal','center',100);
-      text('Page '+pageNo+' / '+total,W-MR,286.5,6.0,MUTED,'normal','right');
+      text('Page '+pageNo+' / '+total,W-MR,289,6.0,MUTED,'normal','right');
     }
     function header(){
-      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(0,0,W,3,'F');
       var logo=document.querySelector('.brand img');
       if(logo&&logo.src){try{doc.addImage(logo.src,'PNG',ML,9,25,25);}catch(e){}}
-      text('HNR Consulting',45,15,15.5,BLUE,'bold');
-      text('Formation et Traduction',45,22,8.8,BLUE,'italic');
+      text('HNR Consulting',45,18.5,15.5,BLUE,'bold');
+      text('Formation et Traduction',45,25.5,8.8,BLUE,'italic');
       text('Tél : +241 74 14 70 51',195,12,6.8,DARK,'normal','right');
       text('Émail : contact.hnrconsulting@gmail.com',195,17,6.8,DARK,'normal','right');
       text('NIF : 202402006021 T',195,22,6.8,MUTED,'normal','right');
       text('RCCM : GA-LBV-01-2024-A10-02198',195,27,6.8,MUTED,'normal','right');
-      line(ML,39,W-MR,39,BLUE,1.1);line(ML,40.2,W-MR,40.2,RED,.35);
+      
     }
     function drawClientMeta(){
       box(ML,45,TW,33,LIGHT,LINE,2);
@@ -2437,7 +2432,7 @@ function downloadDevisPdf(data){
     var col=[ML,ML+91,ML+124,ML+145,ML+TW];
     function tableHeader(yy){
       doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.rect(ML,yy,TW,headerH,'F');
-      [['Nature du document',col[0]+45.5],['Prix unitaire',col[1]+16.5],['Qté (pages)',col[2]+10.5],['Total',col[3]+32.5]].forEach(function(a){text(a[0],a[1],yy+6.7,6.8,WHITE,'bold','center');});
+      [['Nature du document',col[0]+45.5],['Prix unitaire',col[1]+16.5],['Qté (pages)',col[2]+10.5],['Total',col[3]+17.5]].forEach(function(a){text(a[0],a[1],yy+6.7,6.8,WHITE,'bold','center');});
       for(var i=1;i<col.length-1;i++){doc.setDrawColor(WHITE[0],WHITE[1],WHITE[2]);doc.setLineWidth(.35);doc.line(col[i],yy,col[i],yy+headerH);}
     }
     function drawTableRow(r,yy,alt){
@@ -2501,8 +2496,14 @@ function downloadDevisPdf(data){
     text('Ce devis est valable 7 jours à compter de sa date de création. La confirmation de l’offre vaut acceptation des conditions de règlement indiquées ci-dessus.',ML,y+14,6.6,MUTED,'normal',null,TW);
     text('Devis généré automatiquement par HNR Consulting • Formation et Traduction',W/2,y+25,6.3,MUTED,'italic','center',TW);
 
-    // Final footer pass after all pages have been created.
-    for(var pn=1;pn<=doc.getNumberOfPages();pn++){doc.setPage(pn);pageFooter(pn,doc.getNumberOfPages());}
+    // Final footer pass: no duplicated company information. Add only the legal/commercial notice in red.
+    var totalPages=doc.getNumberOfPages();
+    for(var pn=1;pn<=totalPages;pn++){
+      doc.setPage(pn);
+      var footerText='Ce devis a été généré automatiquement sur notre site à partir des informations fournies par le client. Les montants indiqués sont estimatifs et peuvent varier après évaluation réelle des documents.';
+      text(footerText,W/2,284.5,6.0,RED,'normal','center',TW-6);
+      text('Page '+pn+' / '+totalPages,W-MR,291,5.8,MUTED,'normal','right');
+    }
     var pdfFilename='Devis_HNR_'+d.quoteNo+'_'+(d.nom||'client').replace(/[^a-z0-9]+/gi,'_')+'.pdf';
     savePdfBlobLocally(doc,pdfFilename);
     showToast('Le devis PDF n° '+d.quoteNo+' a été téléchargé.');
