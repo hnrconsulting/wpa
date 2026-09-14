@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /wpa/
+Sitemap: https://hnrconsulting.github.io/wpa/sitemap.xml
