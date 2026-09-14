@@ -1907,12 +1907,18 @@ function submitRegistration(e){
 }
 
 function qrPayloadForRegistration(r){
-  /* QR de signature électronique compact : uniquement les données utiles à
-     l’authentification. Un payload court produit un QR moins dense et donc
-     nettement plus facile à scanner sur un PDF imprimé ou photographié. */
-  var payload={v:5,type:'inscription',date:r.date||'',civilite:r.civilite||'',nom:r.nom||'',prenom:r.prenom||'',profession:r.profession||'',formation:r.type||'',mode:r.mode||'',dureeMois:r.dureeMois||0,total:r.total||0,initialPayment:r.initialPayment||0};
+  /* Signature électronique QR compacte : le format tableau réduit fortement
+     la densité du QR tout en conservant les données utiles à la vérification. */
+  var civilite=r.civilite==='Monsieur'?'M':(r.civilite==='Madame'?'F':'X');
+  var payload=[1,'i',r.date||'',civilite,r.nom||'',r.prenom||'',r.profession||'',r.type||'',r.mode||'',Number(r.dureeMois)||0,Number(r.total)||0,Number(r.initialPayment)||0];
   try{return 'HNR1|'+btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
   catch(e){return '';}
+}
+function expandRegistrationQrPayload(q){
+  if(Array.isArray(q) && q[1]==='i'){
+    return {v:q[0],type:'inscription',date:q[2]||'',civilite:q[3]==='M'?'Monsieur':(q[3]==='F'?'Madame':'Mademoiselle'),nom:q[4]||'',prenom:q[5]||'',profession:q[6]||'',formation:q[7]||'',mode:q[8]||'',dureeMois:q[9]||0,total:q[10]||0,initialPayment:q[11]||0};
+  }
+  return q;
 }
 
 function renderRegistrationResult(r){
@@ -1948,13 +1954,13 @@ function downloadRegPdf(){
   try{
     var jsPDF=window.jspdf.jsPDF;
     var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-    var W=210,H=297,ML=13,MR=13,R=197,TW=R-ML;
-    var BLUE=[0,74,147],RED=[237,27,36],DARK=[35,47,62],MUTED=[91,104,119],LIGHT=[246,249,253],LINE=[190,208,226],WHITE=[255,255,255];
+    var W=210,H=297,ML=15,MR=15,R=195,TW=R-ML;
+    var BLUE=[0,74,147],RED=[237,27,36],DARK=[35,47,62],MUTED=[86,99,114],LIGHT=[244,247,250],LINE=[211,220,229],WHITE=[255,255,255];
     var montserratReady=registerMontserratForPdf(doc);
     function setF(style,size,color){
       var st=style||'normal';
       try{
-        if(montserratReady && st!=='bold') doc.setFont('Montserrat',st);
+        if(montserratReady && st==='italic') doc.setFont('Montserrat','italic');
         else doc.setFont('helvetica',st==='bold'?'bold':'normal');
       }catch(e){doc.setFont('helvetica',st==='bold'?'bold':(st==='italic'?'italic':'normal'));}
       doc.setFontSize(size||8);var c=color||DARK;doc.setTextColor(c[0],c[1],c[2]);
@@ -1965,116 +1971,136 @@ function downloadRegPdf(){
     }
     function ln(x1,y1,x2,y2,c,w){c=c||LINE;doc.setDrawColor(c[0],c[1],c[2]);doc.setLineWidth(w||.35);doc.line(x1,y1,x2,y2);}
     function bx(x,y,w,h,fill,stroke,r){
-      fill=fill||WHITE;stroke=stroke||LINE;doc.setFillColor(fill[0],fill[1],fill[2]);doc.setDrawColor(stroke[0],stroke[1],stroke[2]);doc.setLineWidth(.35);doc.roundedRect(x,y,w,h,r||1.6,r||1.6,'FD');
+      fill=fill||WHITE;stroke=stroke||LINE;doc.setFillColor(fill[0],fill[1],fill[2]);doc.setDrawColor(stroke[0],stroke[1],stroke[2]);doc.setLineWidth(.35);doc.roundedRect(x,y,w,h,r||1.5,r||1.5,'FD');
     }
     function radio(x,y,checked){
-      doc.setDrawColor(BLUE[0],BLUE[1],BLUE[2]);doc.setLineWidth(.38);doc.circle(x,y,1.65,'S');
-      if(checked){doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.circle(x,y,.82,'F');}
+      doc.setDrawColor(BLUE[0],BLUE[1],BLUE[2]);doc.setLineWidth(.35);doc.circle(x,y,1.35,'S');
+      if(checked){doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.circle(x,y,.68,'F');}
     }
     function value(v){return String(v==null||v===''?'—':v);}
     function registrationLocation(address){
       var raw=String(address||'').trim();if(!raw)return 'Lieu non précisé';
       var parts=raw.split(',').map(function(x){return x.trim();}).filter(Boolean);
-      if(parts.length>1){var last=parts[parts.length-1].replace(/\s*[-–—]\s*(Gabon|France|Cameroun|Côte d.?Ivoire|Sénégal|Bénin|Togo|Congo.*)$/i,'').trim();return last||parts[parts.length-1];}
+      if(parts.length>1){
+        var last=parts[parts.length-1].replace(/\s*[-–—]\s*(Gabon|France|Cameroun|Côte d.?Ivoire|Sénégal|Bénin|Togo|Congo.*)$/i,'').trim();
+        return last||parts[parts.length-1];
+      }
       var m=raw.match(/[-–—]\s*([^,]+)$/);return m?m[1].replace(/\bGabon\b/i,'').trim():raw;
     }
+    function longDate(iso){
+      if(!iso)return 'date non précisée';
+      var d=new Date(iso+'T12:00:00');
+      if(isNaN(d.getTime()))return formatDateFR(iso);
+      return d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+    }
     function header(){
+      /* Calque volontairement identique à l’en-tête de la facture proforma. */
       var logo=document.querySelector('.brand img');
-      if(logo&&logo.src){try{doc.addImage(logo.src,'PNG',ML,5.2,22,22);}catch(e){}}
-      tx('HNR Consulting',40,13.6,14.2,BLUE,'bold');
-      tx('Formation et Traduction',40,19.8,7.7,BLUE,'italic');
-      tx('Tél : +241 74 14 70 51',R,9.4,5.9,DARK,'normal','right');
-      tx('Émail : contact.hnrconsulting@gmail.com',R,13.2,5.9,DARK,'normal','right');
-      tx('NIF : 202402006021 T',R,17.0,5.9,MUTED,'normal','right');
-      tx('RCCM : GA-LBV-01-2024-A10-02198',R,20.8,5.9,MUTED,'normal','right');
-      ln(ML,25.5,R,25.5,LINE,.5);
+      if(logo&&logo.src){try{doc.addImage(logo.src,'PNG',ML,9,25,25);}catch(e){}}
+      tx('HNR Consulting',45,18.5,15.5,BLUE,'bold');
+      tx('Formation et Traduction',45,25.5,8.8,BLUE,'italic');
+      tx('Tél : +241 74 14 70 51',R,12,6.8,DARK,'normal','right');
+      tx('Émail : contact.hnrconsulting@gmail.com',R,17,6.8,DARK,'normal','right');
+      tx('NIF : 202402006021 T',R,22,6.8,MUTED,'normal','right');
+      tx('RCCM : GA-LBV-01-2024-A10-02198',R,27,6.8,MUTED,'normal','right');
+      /* Séparateur placé sous le logo avec un espace de sécurité régulier. */
+      ln(ML,38,R,38,LINE,.5);
     }
-    function sec(label,y){tx(label,ML,y,7.0,BLUE,'bold');ln(ML,y+2.6,R,y+2.6,BLUE,.32);}
+    function sec(label,y){
+      tx(label,ML,y,7.4,BLUE,'bold');
+      ln(ML,y+2.5,R,y+2.5,BLUE,.3);
+    }
     function labelValue(label,v,x,y,labelW,maxW){
-      tx(label,x,y,6.1,BLUE,'bold');tx(value(v),x+labelW,y,6.35,DARK,'normal',null,maxW||80);
+      tx(label,x,y,6.7,BLUE,'bold');
+      tx(value(v),x+labelW,y,7.0,DARK,'normal',null,maxW||80);
     }
-    function addPhoto(){
-      var x=161,y=39,s=36;bx(x,y,s,s,WHITE,BLUE,1.1);
-      if(r.photo){try{doc.addImage(r.photo,'JPEG',x+1,y+1,s-2,s-2);}catch(e){tx('PHOTO',x+s/2,y+19,6,MUTED,'bold','center');}}
-      else{tx('PHOTO',x+s/2,y+17,6,MUTED,'bold','center');tx('D’IDENTITÉ',x+s/2,y+23,5.2,MUTED,'normal','center');}
-      tx('Photo d’identité',x+s/2,y+s+4.2,5.3,MUTED,'normal','center');
+    function addPhoto(x,y,s){
+      bx(x,y,s,s,WHITE,BLUE,1.0);
+      if(r.photo){try{doc.addImage(r.photo,'JPEG',x+1,y+1,s-2,s-2);}catch(e){tx('PHOTO',x+s/2,y+s/2,6,MUTED,'bold','center');}}
+      else{tx('PHOTO',x+s/2,y+s/2-1,6,MUTED,'bold','center');tx('D’IDENTITÉ',x+s/2,y+s/2+5,5.0,MUTED,'normal','center');}
+      tx('Photo d’identité',x+s/2,y+s+4.2,5.5,MUTED,'normal','center');
     }
+    function addCandidateSignature(x,y,maxW,maxH){
+      if(!r.signature){ln(x,y+maxH-1,x+maxW,y+maxH-1,BLUE,.4);return;}
+      try{
+        var prop=doc.getImageProperties(r.signature), ratio=(prop&&prop.width&&prop.height)?prop.width/prop.height:3.5;
+        var w=maxW,h=w/ratio;
+        if(h>maxH){h=maxH;w=h*ratio;}
+        doc.addImage(r.signature,'PNG',x,y,w,h);
+      }catch(e){ln(x,y+maxH-1,x+maxW,y+maxH-1,BLUE,.4);}
+    }
+
     header();
-    tx('FORMULAIRE D’INSCRIPTION',W/2,34.0,11.4,BLUE,'bold','center');
-    tx('FORMATION EN ANGLAIS',W/2,39.1,6.7,RED,'bold','center');
+    tx('FORMULAIRE D’INSCRIPTION',W/2,46.0,11.4,BLUE,'bold','center');
+    tx('FORMATION EN ANGLAIS',W/2,51.0,7.0,RED,'bold','center');
 
-    /* Grille fixe A4 : chaque section est dimensionnée avant d'être dessinée. */
-    var y=44;
-    var idX=ML,idW=142,idH=41,photoX=161;
-    bx(idX,y,idW,idH,WHITE,BLUE,1.1);
-    tx('IDENTITÉ & ÉTAT-CIVIL',idX+6,y+5.4,6.8,BLUE,'bold');
-    tx('Civilité',idX+6,y+11.6,5.9,MUTED,'normal');
-    radio(idX+32,y+10.2,r.civilite==='Monsieur');tx('Monsieur',idX+35,y+11.6,5.8,DARK);
-    radio(idX+66,y+10.2,r.civilite==='Madame');tx('Madame',idX+69,y+11.6,5.8,DARK);
-    radio(idX+98,y+10.2,r.civilite==='Mademoiselle');tx('Mademoiselle',idX+101,y+11.6,5.35,DARK);
-    labelValue('Nom(s)',r.nom,idX+6,y+19.0,19,50);
-    labelValue('Prénom(s)',r.prenom,idX+6,y+26.0,22,47);
-    labelValue('Profession',r.profession,idX+6,y+33.0,22,47);
-    labelValue('Né(e) le',formatDateFR(r.naissance),idX+78,y+19.0,19,43);
-    labelValue('À',r.lieu,idX+78,y+26.0,19,43);
-    labelValue('Nationalité',r.nationalite,idX+78,y+33.0,27,35);
-    addPhoto();
-    y=91;
+    /* 1 — Identité et photo : même axe horizontal, même hauteur. */
+    var y=57,idX=ML,idW=142,idH=40,photoX=160,photoS=35;
+    bx(idX,y,idW,idH,WHITE,BLUE,1.0);
+    tx('IDENTITÉ & ÉTAT-CIVIL',idX+6,y+5.5,7.1,BLUE,'bold');
+    tx('Civilité',idX+6,y+11.7,6.5,MUTED,'normal');
+    radio(idX+31,y+10.3,r.civilite==='Monsieur');tx('Monsieur',idX+34,y+11.9,6.4,DARK);
+    radio(idX+66,y+10.3,r.civilite==='Madame');tx('Madame',idX+69,y+11.9,6.4,DARK);
+    radio(idX+100,y+10.3,r.civilite==='Mademoiselle');tx('Mademoiselle',idX+103,y+11.9,5.9,DARK);
+    labelValue('Nom(s)',r.nom,idX+6,y+19.0,20,50);
+    labelValue('Prénom(s)',r.prenom,idX+6,y+26.0,24,46);
+    labelValue('Profession',r.profession,idX+6,y+33.0,26,44);
+    labelValue('Né(e) le',formatDateFR(r.naissance),idX+78,y+19.0,22,39);
+    labelValue('À',r.lieu,idX+78,y+26.0,22,39);
+    labelValue('Nationalité',r.nationalite,idX+78,y+33.0,29,32);
+    addPhoto(photoX,y,photoS);
 
-    sec('COORDONNÉES',y);y+=5.4;
-    bx(ML,y,TW,23,WHITE,LINE,1.1);
-    labelValue('Adresse',r.adresse,ML+6,y+7.7,20,162);
-    labelValue('Téléphone',r.tel,ML+6,y+15.8,26,55);
-    labelValue('E-mail',r.email,ML+103,y+15.8,20,60);
-    y=121;
+    /* 2 — Coordonnées */
+    y=102;sec('COORDONNÉES',y);y+=5.0;
+    bx(ML,y,TW,22,WHITE,LINE,1.0);
+    labelValue('Adresse',r.adresse,ML+6,y+7.5,21,151);
+    labelValue('Téléphone',r.tel,ML+6,y+15.4,28,55);
+    labelValue('E-mail',r.email,ML+101,y+15.4,20,59);
 
-    sec('À PROPOS DE LA FORMATION',y);y+=5.4;
-    bx(ML,y,TW,25,LIGHT,LINE,1.1);
-    tx('Type',ML+6,y+7.5,6.1,BLUE,'bold');
-    radio(ML+28,y+6.0,r.type==='standard');tx('Anglais standard',ML+31,y+7.5,5.9,DARK);
-    radio(ML+82,y+6.0,r.type==='professionnel');tx('Anglais professionnel',ML+85,y+7.5,5.8,DARK);
-    tx('Mode',ML+6,y+17.0,6.1,BLUE,'bold');
-    radio(ML+28,y+15.5,r.mode==='presentiel');tx('Présentiel',ML+31,y+17.0,5.9,DARK);
-    radio(ML+69,y+15.5,r.mode==='ligne');tx('En ligne',ML+72,y+17.0,5.9,DARK);
-    radio(ML+108,y+15.5,r.mode==='domicile');tx('À domicile',ML+111,y+17.0,5.9,DARK);
-    tx('Durée : '+String(r.dureeMois||'—')+' mois',R-6,y+17.0,6.0,MUTED,'normal','right');
-    y=153;
+    /* 3 — Formation */
+    y=132;sec('À PROPOS DE LA FORMATION',y);y+=5.0;
+    bx(ML,y,TW,24,LIGHT,LINE,1.0);
+    tx('Type',ML+6,y+7.2,6.7,BLUE,'bold');
+    radio(ML+28,y+5.9,r.type==='standard');tx('Anglais standard',ML+31,y+7.4,6.5,DARK);
+    radio(ML+88,y+5.9,r.type==='professionnel');tx('Anglais professionnel',ML+91,y+7.4,6.4,DARK);
+    tx('Mode',ML+6,y+17.0,6.7,BLUE,'bold');
+    radio(ML+28,y+15.7,r.mode==='presentiel');tx('Présentiel',ML+31,y+17.2,6.5,DARK);
+    radio(ML+68,y+15.7,r.mode==='ligne');tx('En ligne',ML+71,y+17.2,6.5,DARK);
+    radio(ML+106,y+15.7,r.mode==='domicile');tx('À domicile',ML+109,y+17.2,6.5,DARK);
+    tx('Durée : '+String(r.dureeMois||'—')+' mois',R-6,y+17.2,6.5,MUTED,'normal','right');
 
-    sec('COÛT DE LA FORMATION',y);y+=5.4;
-    bx(ML,y,TW,35,WHITE,LINE,1.1);
-    tx('Frais d’inscription',ML+6,y+7.5,6.1,MUTED);tx(formatCFA(r.insc),ML+80,y+7.5,6.2,DARK,'bold','right');
-    tx('Mensualité × '+String(r.dureeMois||'—')+' mois',ML+6,y+14.6,6.1,MUTED);tx(formatCFA(r.mens),ML+80,y+14.6,6.2,DARK,'bold','right');
-    tx('Frais d’examen',ML+6,y+21.7,6.1,MUTED);tx(formatCFA(r.exam),ML+80,y+21.7,6.2,DARK,'bold','right');
-    ln(ML+87,y+4.5,ML+87,y+30.5,LINE,.35);
-    tx('COÛT TOTAL',ML+94,y+8.0,6.0,BLUE,'bold');tx(formatCFA(r.total),ML+94,y+16.8,8.7,BLUE,'bold');
-    tx('Montant initial à payer à l’inscription',ML+94,y+24.0,5.8,MUTED,'bold');
-    tx(formatCFA(r.initialPayment||0)+' (frais d’inscription + 1ʳᵉ mensualité)',ML+94,y+29.9,5.7,RED,'bold',null,87);
-    y=196;
+    /* 4 — Coût */
+    y=164;sec('COÛT DE LA FORMATION',y);y+=5.0;
+    bx(ML,y,TW,36,WHITE,LINE,1.0);
+    tx('Frais d’inscription',ML+6,y+7.5,6.7,MUTED);tx(formatCFA(r.insc),ML+82,y+7.5,6.8,DARK,'bold','right');
+    tx('Mensualité × '+String(r.dureeMois||'—')+' mois',ML+6,y+15.0,6.7,MUTED);tx(formatCFA(r.mens),ML+82,y+15.0,6.8,DARK,'bold','right');
+    tx('Frais d’examen',ML+6,y+22.5,6.7,MUTED);tx(formatCFA(r.exam),ML+82,y+22.5,6.8,DARK,'bold','right');
+    ln(ML+88,y+4.5,ML+88,y+31.5,LINE,.35);
+    tx('COÛT TOTAL',ML+95,y+8.0,6.6,BLUE,'bold');tx(formatCFA(r.total),ML+95,y+16.8,9.0,BLUE,'bold');
+    tx('Montant initial à payer à l’inscription',ML+95,y+24.0,6.2,MUTED,'bold',null,84);
+    tx(formatCFA(r.initialPayment||0)+' (inscription + 1ʳᵉ mensualité)',ML+95,y+30.4,5.9,RED,'bold',null,84);
 
-    /* Zone finale : lieu/date, signature candidat et QR électronique, sans footer. */
-    sec('VALIDATION DE L’INSCRIPTION',y);y+=5.4;
-    bx(ML,y,TW,52,WHITE,LINE,1.1);
-    var loc=registrationLocation(r.adresse),dateTxt=String(r.date||'');
-    tx('Lieu et date d’inscription',ML+6,y+7.5,6.2,BLUE,'bold');
-    tx(loc+', '+dateTxt,ML+6,y+15.0,6.5,DARK,'normal',null,78);
-    tx('SIGNATURE DU CANDIDAT',ML+6,y+24.0,6.0,BLUE,'bold');
-    if(r.signature){try{doc.addImage(r.signature,'PNG',ML+6,y+27,72,11);}catch(e){ln(ML+6,y+39,ML+78,y+39,BLUE,.4);}}
-    else ln(ML+6,y+39,ML+78,y+39,BLUE,.4);
-    tx('Signature apposée lors de l’inscription en ligne',ML+6,y+44.5,4.9,MUTED,'italic',null,80);
-    ln(103,y+5,103,y+43,LINE,.35);
-    var qx=142,qy=y+6,qs=39;
-    tx('SIGNATURE ÉLECTRONIQUE',170,y+6.0,5.9,BLUE,'bold','center');
-    var qr=drawDevisQr(qrPayloadForRegistration(r),800,'M');
-    if(qr){try{doc.addImage(qr,'PNG',qx,qy,qs,qs);}catch(e){}}
-    tx('QR Code dynamique',170,y+47.0,5.1,MUTED,'normal','center');
-    tx('Scanner pour vérifier',170,y+50.0,5.1,MUTED,'italic','center');
+    /* 5 — Validation : lieu/date + signature candidat + QR. */
+    y=211;sec('VALIDATION DE L’INSCRIPTION',y);y+=5.0;
+    bx(ML,y,TW,67,WHITE,LINE,1.0);
+    var split=102;
+    ln(split,y+5,split,y+62,LINE,.35);
+    tx('LIEU ET DATE D’INSCRIPTION',ML+6,y+8,6.5,BLUE,'bold');
+    var loc=registrationLocation(r.adresse), dateTxt=longDate(r.date);
+    tx('Fait à '+loc+', le '+dateTxt,ML+6,y+16,7.0,DARK,'normal',null,78);
+    tx('SIGNATURE DU CANDIDAT',ML+6,y+28,6.5,BLUE,'bold');
+    addCandidateSignature(ML+6,y+33,76,16);
+    var qr=drawDevisQr(qrPayloadForRegistration(r),1200,'L');
+    var qrSize=43,qx=143,qy=y+5;
+    if(qr){try{doc.addImage(qr,'PNG',qx,qy,qrSize,qrSize);}catch(e){}}
+    tx('SIGNATURE ÉLECTRONIQUE',qx+qrSize/2,y+51.5,6.6,BLUE,'bold','center');
+    tx('QR Code de vérification',qx+qrSize/2,y+58.5,6.2,MUTED,'italic','center');
 
-    if((y+52)>H-8) throw new Error('Mise en page inscription dépasse la zone A4');
+    if(y+67>H-10) throw new Error('Mise en page inscription dépasse la zone A4');
     savePdfBlobLocally(doc,'Inscription_HNR_'+(r.nom||'candidat').replace(/[^a-z0-9]+/gi,'_')+'.pdf');
     showToast('La fiche d’inscription PDF a été téléchargée.');
   }catch(err){console.error('Registration PDF error',err);showToast('Une erreur est survenue lors de la génération de la fiche d’inscription PDF.');}
 }
-
 /* ===================== DEVIS TRADUCTION ===================== */
 var devisDocuments = [];
 var lastDevis = null;
@@ -2431,7 +2457,7 @@ function downloadDevisPdf(data){
     text('Montant HT',tx+6,y+17,6.9,DARK);text(money(d.totalHT),tx+tw-6,y+17,6.9,DARK,'normal','right');
     text('TPS 9,5 %',tx+6,y+25,6.9,DARK);text(money(d.tps),tx+tw-6,y+25,6.9,DARK,'normal','right');
     doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.roundedRect(tx+4,y+29,tw-8,10,1.5,1.5,'F');
-    text('TOTAL TTC',tx+9,y+36,7.2,WHITE,'bold');text(money(d.ttc),tx+tw-9,y+36,7.7,WHITE,'bold','right');
+    text('TOTAL TTC',tx+6,y+35.5,7.2,WHITE,'bold');text(money(d.ttc),tx+tw-9,y+36,7.7,WHITE,'bold','right');
 
     y+=50;
     var lowerH=65, split=118;
@@ -2446,7 +2472,7 @@ function downloadDevisPdf(data){
     var ax=ML+split+7, aw=TW-split-14;
     if(qr){try{doc.addImage(qr,'PNG',ax+((aw-31)/2),y+7,31,31);}catch(e){}}
     text('SIGNATURE ÉLECTRONIQUE',ax+aw/2,y+44,7.1,BLUE,'bold','center',aw);
-    text('QR de vérification',ax+aw/2,y+51,6.5,MUTED,'italic','center',aw);
+    text('QR Code de vérification',ax+aw/2,y+51,6.5,MUTED,'italic','center',aw);
 
 
     /* Aucun bloc de validité ni autre information textuelle n'est conservé en bas de page.
@@ -2560,7 +2586,7 @@ function processQrPayload(data){
   data=String(data||'').trim();
   var m=data.match(/^HNR1\|(.+)$/i);
   if(m){
-    var reg=decodeBase64Url(m[1]);
+    var reg=expandRegistrationQrPayload(decodeBase64Url(m[1]));
     if(reg&&reg.type==='inscription'){renderVerifiedRegistration(reg);return true;}
   }
   var d=data.match(/^HNRD\|(.+)$/i);
