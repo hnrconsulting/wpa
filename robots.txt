@@ -1,3 +1,5 @@
 User-agent: *
-Allow: /wpa/
+Allow: /
+Disallow: /admin/
+
 Sitemap: https://hnrconsulting.github.io/wpa/sitemap.xml
