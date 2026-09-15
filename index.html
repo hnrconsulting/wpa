@@ -1956,14 +1956,14 @@ function downloadRegPdf(){
     var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
     var W=210,H=297,ML=15,MR=15,R=195,TW=R-ML;
     var BLUE=[0,74,147],RED=[237,27,36],DARK=[35,47,62],MUTED=[86,99,114],LIGHT=[244,247,250],LINE=[211,220,229],WHITE=[255,255,255];
-    var montserratReady=registerMontserratForPdf(doc);
+    registerMontserratForPdf(doc);
     function setF(style,size,color){
       var st=style||'normal';
-      try{
-        if(montserratReady && st==='italic') doc.setFont('Montserrat','italic');
-        else doc.setFont('helvetica',st==='bold'?'bold':'normal');
-      }catch(e){doc.setFont('helvetica',st==='bold'?'bold':(st==='italic'?'italic':'normal'));}
-      doc.setFontSize(size||8);var c=color||DARK;doc.setTextColor(c[0],c[1],c[2]);
+      /* Même famille visuelle que la facture proforma : Helvetica reste le moteur
+         vectoriel robuste pour les accents français. Les niveaux "semi-bold"
+         et "extra bold" sont matérialisés par le gras jsPDF disponible. */
+      doc.setFont('helvetica',st==='bolditalic'?'bolditalic':(st==='bold'?'bold':(st==='italic'?'italic':'normal')));
+      doc.setFontSize(size||9);var c=color||DARK;doc.setTextColor(c[0],c[1],c[2]);
     }
     function tx(str,x,y,size,color,style,align,maxW){
       setF(style,size,color);var v=String(str==null?'':str), lines=maxW?doc.splitTextToSize(v,maxW):v.split('\n');
@@ -1974,8 +1974,8 @@ function downloadRegPdf(){
       fill=fill||WHITE;stroke=stroke||LINE;doc.setFillColor(fill[0],fill[1],fill[2]);doc.setDrawColor(stroke[0],stroke[1],stroke[2]);doc.setLineWidth(.35);doc.roundedRect(x,y,w,h,r||1.5,r||1.5,'FD');
     }
     function radio(x,y,checked){
-      doc.setDrawColor(BLUE[0],BLUE[1],BLUE[2]);doc.setLineWidth(.35);doc.circle(x,y,1.35,'S');
-      if(checked){doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.circle(x,y,.68,'F');}
+      doc.setDrawColor(BLUE[0],BLUE[1],BLUE[2]);doc.setLineWidth(.35);doc.circle(x,y,1.15,'S');
+      if(checked){doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.circle(x,y,.58,'F');}
     }
     function value(v){return String(v==null||v===''?'—':v);}
     function registrationLocation(address){
@@ -1987,120 +1987,127 @@ function downloadRegPdf(){
       }
       var m=raw.match(/[-–—]\s*([^,]+)$/);return m?m[1].replace(/\bGabon\b/i,'').trim():raw;
     }
-    function longDate(iso){
-      if(!iso)return 'date non précisée';
-      var d=new Date(iso+'T12:00:00');
-      if(isNaN(d.getTime()))return formatDateFR(iso);
+    function longDate(v){
+      if(!v)return 'date non précisée';
+      var d=null,s=String(v).trim();
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) d=new Date(s+'T12:00:00');
+      else if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){var p=s.split('/');d=new Date(Number(p[2]),Number(p[1])-1,Number(p[0]),12);}
+      else d=new Date(s);
+      if(!d||isNaN(d.getTime()))return s;
       return d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
     }
     function header(){
-      /* Calque volontairement identique à l’en-tête de la facture proforma. */
+      /* Calque de référence de l'en-tête de la facture proforma : mêmes axes,
+         mêmes marges et même logo. Les tailles demandées pour l'inscription
+         sont appliquées sans déplacer la structure. */
       var logo=document.querySelector('.brand img');
       if(logo&&logo.src){try{doc.addImage(logo.src,'PNG',ML,9,25,25);}catch(e){}}
-      tx('HNR Consulting',45,18.5,15.5,BLUE,'bold');
-      tx('Formation et Traduction',45,25.5,8.8,BLUE,'italic');
-      tx('Tél : +241 74 14 70 51',R,12,6.8,DARK,'normal','right');
-      tx('Émail : contact.hnrconsulting@gmail.com',R,17,6.8,DARK,'normal','right');
-      tx('NIF : 202402006021 T',R,22,6.8,MUTED,'normal','right');
-      tx('RCCM : GA-LBV-01-2024-A10-02198',R,27,6.8,MUTED,'normal','right');
-      /* Séparateur placé sous le logo avec un espace de sécurité régulier. */
+      tx('HNR Consulting',45,18.5,13,BLUE,'bold');
+      tx('Formation et Traduction',45,25.5,12,BLUE,'bolditalic');
+      tx('Tél : +241 74 14 70 51',R,12,7,DARK,'bold','right');
+      tx('Émail : contact.hnrconsulting@gmail.com',R,17,7,DARK,'bold','right');
+      tx('NIF : 202402006021 T',R,22,7,MUTED,'bold','right');
+      tx('RCCM : GA-LBV-01-2024-A10-02198',R,27,7,MUTED,'bold','right');
       ln(ML,38,R,38,LINE,.5);
     }
-    function sec(label,y){
-      tx(label,ML,y,7.4,BLUE,'bold');
-      ln(ML,y+2.5,R,y+2.5,BLUE,.3);
+    function sec(label,y,bold){
+      tx(label,ML,y,11,BLUE,bold===false?'normal':'bold');
+      ln(ML,y+2.1,R,y+2.1,BLUE,.3);
     }
     function labelValue(label,v,x,y,labelW,maxW){
-      tx(label,x,y,6.7,BLUE,'bold');
-      tx(value(v),x+labelW,y,7.0,DARK,'normal',null,maxW||80);
+      tx(label,x,y,9,MUTED,'normal');
+      tx(value(v),x+labelW,y,9,DARK,'bold',null,maxW||60);
     }
     function addPhoto(x,y,s){
       bx(x,y,s,s,WHITE,BLUE,1.0);
-      if(r.photo){try{doc.addImage(r.photo,'JPEG',x+1,y+1,s-2,s-2);}catch(e){tx('PHOTO',x+s/2,y+s/2,6,MUTED,'bold','center');}}
-      else{tx('PHOTO',x+s/2,y+s/2-1,6,MUTED,'bold','center');tx('D’IDENTITÉ',x+s/2,y+s/2+5,5.0,MUTED,'normal','center');}
-      tx('Photo d’identité',x+s/2,y+s+4.2,5.5,MUTED,'normal','center');
+      if(r.photo){try{doc.addImage(r.photo,'JPEG',x+1,y+1,s-2,s-2);}catch(e){tx('PHOTO',x+s/2,y+s/2,8,MUTED,'bold','center');}}
+      else{tx('PHOTO',x+s/2,y+s/2-1,8,MUTED,'bold','center');tx('D’IDENTITÉ',x+s/2,y+s/2+5,6.5,MUTED,'normal','center');}
     }
     function addCandidateSignature(x,y,maxW,maxH){
       if(!r.signature){ln(x,y+maxH-1,x+maxW,y+maxH-1,BLUE,.4);return;}
       try{
-        var prop=doc.getImageProperties(r.signature), ratio=(prop&&prop.width&&prop.height)?prop.width/prop.height:3.5;
+        var prop=doc.getImageProperties(r.signature),ratio=(prop&&prop.width&&prop.height)?prop.width/prop.height:3.5;
         var w=maxW,h=w/ratio;
         if(h>maxH){h=maxH;w=h*ratio;}
+        /* Aucune déformation : ratio source strictement conservé. */
         doc.addImage(r.signature,'PNG',x,y,w,h);
       }catch(e){ln(x,y+maxH-1,x+maxW,y+maxH-1,BLUE,.4);}
     }
 
     header();
-    tx('FORMULAIRE D’INSCRIPTION',W/2,46.0,11.4,BLUE,'bold','center');
-    tx('FORMATION EN ANGLAIS',W/2,51.0,7.0,RED,'bold','center');
+    tx('FORMULAIRE D’INSCRIPTION',W/2,50,14,BLUE,'bold','center');
+    tx('FORMATION EN ANGLAIS',W/2,56,12,DARK,'normal','center');
 
-    /* 1 — Identité et photo : même axe horizontal, même hauteur. */
-    var y=57,idX=ML,idW=142,idH=40,photoX=160,photoS=35;
-    bx(idX,y,idW,idH,WHITE,BLUE,1.0);
-    tx('IDENTITÉ & ÉTAT-CIVIL',idX+6,y+5.5,7.1,BLUE,'bold');
-    tx('Civilité',idX+6,y+11.7,6.5,MUTED,'normal');
-    radio(idX+31,y+10.3,r.civilite==='Monsieur');tx('Monsieur',idX+34,y+11.9,6.4,DARK);
-    radio(idX+66,y+10.3,r.civilite==='Madame');tx('Madame',idX+69,y+11.9,6.4,DARK);
-    radio(idX+100,y+10.3,r.civilite==='Mademoiselle');tx('Mademoiselle',idX+103,y+11.9,5.9,DARK);
-    labelValue('Nom(s)',r.nom,idX+6,y+19.0,20,50);
-    labelValue('Prénom(s)',r.prenom,idX+6,y+26.0,24,46);
-    labelValue('Profession',r.profession,idX+6,y+33.0,26,44);
-    labelValue('Né(e) le',formatDateFR(r.naissance),idX+78,y+19.0,22,39);
-    labelValue('À',r.lieu,idX+78,y+26.0,22,39);
-    labelValue('Nationalité',r.nationalite,idX+78,y+33.0,29,32);
-    addPhoto(photoX,y,photoS);
+    /* 1 — Identité et photo : grille compacte à deux colonnes. */
+    var y=61,idX=ML,idW=142,idH=43,photoX=160,photoS=43;
+    bx(idX,y,idW,idH,WHITE,BLUE,1.0);addPhoto(photoX,y,photoS);
+    tx('IDENTITÉ & ÉTAT-CIVIL',idX+6,y+6.5,11,BLUE,'bold');
+    tx('Civilité',idX+6,y+14.5,9,MUTED,'normal');
+    radio(idX+31,y+12.2,r.civilite==='Monsieur');tx('Monsieur',idX+34,y+14.9,9,DARK,'normal');
+    radio(idX+68,y+12.2,r.civilite==='Madame');tx('Madame',idX+71,y+14.9,9,DARK,'normal');
+    radio(idX+103,y+12.2,r.civilite==='Mademoiselle');tx('Mademoiselle',idX+106,y+14.9,8.2,DARK,'normal');
+    labelValue('Nom(s)',r.nom,idX+6,y+23.0,25,47);
+    labelValue('Prénom(s)',r.prenom,idX+6,y+31.0,29,43);
+    labelValue('Profession',r.profession,idX+6,y+39.0,31,41);
+    labelValue('Né(e) le',formatDateFR(r.naissance),idX+78,y+23.0,25,38);
+    labelValue('À',r.lieu,idX+78,y+31.0,25,38);
+    labelValue('Nationalité',r.nationalite,idX+78,y+39.0,31,32);
 
     /* 2 — Coordonnées */
-    y=102;sec('COORDONNÉES',y);y+=5.0;
+    y=110;sec('COORDONNÉES',y,true);y+=5;
     bx(ML,y,TW,22,WHITE,LINE,1.0);
-    labelValue('Adresse',r.adresse,ML+6,y+7.5,21,151);
-    labelValue('Téléphone',r.tel,ML+6,y+15.4,28,55);
-    labelValue('E-mail',r.email,ML+101,y+15.4,20,59);
+    labelValue('Adresse',r.adresse,ML+6,y+8.5,24,150);
+    labelValue('Téléphone',r.tel,ML+6,y+16.8,30,54);
+    labelValue('E-mail',r.email,ML+101,y+16.8,22,57);
 
     /* 3 — Formation */
-    y=132;sec('À PROPOS DE LA FORMATION',y);y+=5.0;
-    bx(ML,y,TW,24,LIGHT,LINE,1.0);
-    tx('Type',ML+6,y+7.2,6.7,BLUE,'bold');
-    radio(ML+28,y+5.9,r.type==='standard');tx('Anglais standard',ML+31,y+7.4,6.5,DARK);
-    radio(ML+88,y+5.9,r.type==='professionnel');tx('Anglais professionnel',ML+91,y+7.4,6.4,DARK);
-    tx('Mode',ML+6,y+17.0,6.7,BLUE,'bold');
-    radio(ML+28,y+15.7,r.mode==='presentiel');tx('Présentiel',ML+31,y+17.2,6.5,DARK);
-    radio(ML+68,y+15.7,r.mode==='ligne');tx('En ligne',ML+71,y+17.2,6.5,DARK);
-    radio(ML+106,y+15.7,r.mode==='domicile');tx('À domicile',ML+109,y+17.2,6.5,DARK);
-    tx('Durée : '+String(r.dureeMois||'—')+' mois',R-6,y+17.2,6.5,MUTED,'normal','right');
+    y=143;sec('À PROPOS DE LA FORMATION',y,true);y+=5;
+    bx(ML,y,TW,23,LIGHT,LINE,1.0);
+    tx('Type',ML+6,y+8.5,9,MUTED,'normal');
+    radio(ML+28,y+6.7,r.type==='standard');tx('Anglais standard',ML+31,y+8.8,9,DARK,'bold');
+    radio(ML+89,y+6.7,r.type==='professionnel');tx('Anglais professionnel',ML+92,y+8.8,8.5,DARK,'bold');
+    tx('Mode',ML+6,y+18.0,9,MUTED,'normal');
+    radio(ML+28,y+16.2,r.mode==='presentiel');tx('En présentiel',ML+31,y+18.3,9,DARK,'bold');
+    radio(ML+70,y+16.2,r.mode==='ligne');tx('En ligne',ML+73,y+18.3,9,DARK,'bold');
+    radio(ML+108,y+16.2,r.mode==='domicile');tx('À domicile',ML+111,y+18.3,9,DARK,'bold');
+    tx('Durée : '+String(r.dureeMois||'—')+' mois',R-6,y+18.3,9,MUTED,'normal','right');
 
     /* 4 — Coût */
-    y=164;sec('COÛT DE LA FORMATION',y);y+=5.0;
-    bx(ML,y,TW,36,WHITE,LINE,1.0);
-    tx('Frais d’inscription',ML+6,y+7.5,6.7,MUTED);tx(formatCFA(r.insc),ML+82,y+7.5,6.8,DARK,'bold','right');
-    tx('Mensualité × '+String(r.dureeMois||'—')+' mois',ML+6,y+15.0,6.7,MUTED);tx(formatCFA(r.mens),ML+82,y+15.0,6.8,DARK,'bold','right');
-    tx('Frais d’examen',ML+6,y+22.5,6.7,MUTED);tx(formatCFA(r.exam),ML+82,y+22.5,6.8,DARK,'bold','right');
-    ln(ML+88,y+4.5,ML+88,y+31.5,LINE,.35);
-    tx('COÛT TOTAL',ML+95,y+8.0,6.6,BLUE,'bold');tx(formatCFA(r.total),ML+95,y+16.8,9.0,BLUE,'bold');
-    tx('Montant initial à payer à l’inscription',ML+95,y+24.0,6.2,MUTED,'bold',null,84);
-    tx(formatCFA(r.initialPayment||0)+' (inscription + 1ʳᵉ mensualité)',ML+95,y+30.4,5.9,RED,'bold',null,84);
+    y=176;sec('COÛT DE LA FORMATION',y,true);y+=5;
+    bx(ML,y,TW,37,WHITE,LINE,1.0);
+    tx('Frais d’inscription',ML+6,y+8.5,9,MUTED,'normal');tx(formatCFA(r.insc),ML+82,y+8.5,9,DARK,'bold','right');
+    tx('Mensualité × '+String(r.dureeMois||'—')+' mois',ML+6,y+17.0,9,MUTED,'normal');tx(formatCFA(r.mens*dureeMois),ML+82,y+17.0,9,DARK,'bold','right');
+    tx('Frais d’examen',ML+6,y+25.5,9,MUTED,'normal');tx(formatCFA(r.exam),ML+82,y+25.5,9,DARK,'bold','right');
+    ln(ML+88,y+4.5,ML+88,y+32.5,LINE,.35);
+    tx('COÛT TOTAL',ML+95,y+9,9,BLUE,'bold');tx(formatCFA(r.total),ML+95,y+18.0,11,BLUE,'bold');
+    tx('Montant initial à payer :',ML+95,y+27.0,9,MUTED,'normal');
+    tx(formatCFA(r.initialPayment||0)+' (inscription + 1re mensualité)',ML+95,y+33.8,9,RED,'bold',null,84);
 
-    /* 5 — Validation : lieu/date + signature candidat + QR. */
-    y=211;sec('VALIDATION DE L’INSCRIPTION',y);y+=5.0;
-    bx(ML,y,TW,67,WHITE,LINE,1.0);
-    var split=102;
-    ln(split,y+5,split,y+62,LINE,.35);
-    tx('LIEU ET DATE D’INSCRIPTION',ML+6,y+8,6.5,BLUE,'bold');
-    var loc=registrationLocation(r.adresse), dateTxt=longDate(r.date);
-    tx('Fait à '+loc+', le '+dateTxt,ML+6,y+16,7.0,DARK,'normal',null,78);
-    tx('SIGNATURE DU CANDIDAT',ML+6,y+28,6.5,BLUE,'bold');
-    addCandidateSignature(ML+6,y+33,76,16);
-    var qr=drawDevisQr(qrPayloadForRegistration(r),1200,'L');
-    var qrSize=43,qx=143,qy=y+5;
+    /* 5 — Validation : trois zones équilibrées, sans étirer la signature. */
+    y=224;sec('VALIDATION DE L’INSCRIPTION',y,true);y+=5;
+    var valH=58;bx(ML,y,TW,valH,WHITE,LINE,1.0);
+    var c1=72,c2=61,c3=TW-c1-c2;
+    ln(ML+c1,y+5,ML+c1,y+valH-5,LINE,.35);ln(ML+c1+c2,y+5,ML+c1+c2,y+valH-5,LINE,.35);
+
+    tx('LIEU ET DATE D’INSCRIPTION',ML+6,y+9,11,BLUE,'bold');
+    var loc=registrationLocation(r.adresse),dateTxt=longDate(r.date);
+    tx('Fait à '+loc+', le '+dateTxt,ML+6,y+19,11,DARK,'normal',null,c1-12);
+
+    tx('SIGNATURE DU CANDIDAT',ML+c1+6,y+9,11,BLUE,'bold');
+    addCandidateSignature(ML+c1+7,y+17,c2-14,26);
+
+    var qr=drawDevisQr(qrPayloadForRegistration(r),1000,'L');
+    var qrSize=32,qx=ML+c1+c2+(c3-qrSize)/2,qy=y+5;
     if(qr){try{doc.addImage(qr,'PNG',qx,qy,qrSize,qrSize);}catch(e){}}
-    tx('SIGNATURE ÉLECTRONIQUE',qx+qrSize/2,y+51.5,6.6,BLUE,'bold','center');
-    tx('QR Code de vérification',qx+qrSize/2,y+58.5,6.2,MUTED,'italic','center');
+    tx('SIGNATURE ÉLECTRONIQUE',qx+qrSize/2,y+41,9,BLUE,'bold','center',c3-8);
+    tx('QR Code de vérification',qx+qrSize/2,y+49,7,MUTED,'normal','center',c3-8);
 
-    if(y+67>H-10) throw new Error('Mise en page inscription dépasse la zone A4');
+    if(y+valH>H-8) throw new Error('Mise en page inscription dépasse la zone A4');
     savePdfBlobLocally(doc,'Inscription_HNR_'+(r.nom||'candidat').replace(/[^a-z0-9]+/gi,'_')+'.pdf');
     showToast('La fiche d’inscription PDF a été téléchargée.');
   }catch(err){console.error('Registration PDF error',err);showToast('Une erreur est survenue lors de la génération de la fiche d’inscription PDF.');}
 }
+
 /* ===================== DEVIS TRADUCTION ===================== */
 var devisDocuments = [];
 var lastDevis = null;
