@@ -682,14 +682,15 @@ nav.main-links>a{display:inline-flex!important;align-items:center;white-space:no
 /* ===== HNR V25 GLOBAL INTEGRATION ===== */
 /* Events is a native site page: it uses the same navigation/footer and embedded logo as V24. */
 @media (min-width:901px){ .nav-cta .phone-pill{display:none!important;} }
-.mobile-event-link{display:none!important;}
-@media (max-width:900px) and (pointer:coarse){
-  .mobile-event-link{display:flex!important;align-items:center;min-height:44px;padding:13px 14px!important;}
+nav.main-links>a.mobile-event-link{display:none!important;}
+@media (max-width:900px){
+  nav.main-links>a.mobile-event-link{display:flex!important;align-items:center;min-height:44px;padding:13px 14px!important;}
 }
 /* Manager page mobile/tablet refinements requested for V25. */
 @media (max-width:980px){
   #page-manager .eyebrow-tag{white-space:nowrap;display:inline-flex;max-width:100%;font-size:.74rem;line-height:1.1;}
-  #page-manager .hero h1{font-size:clamp(1.65rem,5.8vw,2.25rem)!important;line-height:1.12!important;max-width:20ch;}
+  #page-manager .hero > .wrap{grid-template-columns:1fr!important;}
+  #page-manager .hero h1{font-size:clamp(1.65rem,5.8vw,2.25rem)!important;line-height:1.12!important;max-width:28ch!important;width:100%!important;}
   #page-manager .manager-portrait{width:calc(100% - 24px)!important;max-width:1080px!important;margin:0 auto 30px!important;aspect-ratio:16/9!important;height:auto!important;border-radius:18px;overflow:hidden;}
   #page-manager .manager-portrait img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;display:block;}
 }
@@ -1509,6 +1510,7 @@ nav.main-links>a{display:inline-flex!important;align-items:center;white-space:no
           <li><a href="/wpa/traduction/" data-page="traduction" onclick="return go('traduction')">Traduction</a></li>
           <li><a href="/wpa/manager/" data-page="manager" onclick="return go('manager')">Mot du Manager</a></li>
           <li><a href="/wpa/contact/" data-page="contact" onclick="return go('contact')">Contact</a></li>
+          <li><a href="/wpa/events/">Événements</a></li>
           <li><a href="/wpa/faq/" data-page="faq" onclick="return go('faq')">FAQ</a></li>
         </ul>
       </div>
