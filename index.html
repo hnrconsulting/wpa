@@ -678,6 +678,26 @@ nav.main-links>a{display:inline-flex!important;align-items:center;white-space:no
 #cropCanvas{width:min(86vw,480px);height:min(86vw,480px);max-width:480px;max-height:480px;aspect-ratio:1/1;}
 .crop-stage{align-items:center;}
 @media(max-width:720px){#cropCanvas{width:min(86vw,420px);height:min(86vw,420px);}}
+
+/* ===== HNR V25 GLOBAL INTEGRATION ===== */
+/* Events is a native site page: it uses the same navigation/footer and embedded logo as V24. */
+@media (min-width:901px){ .nav-cta .phone-pill{display:none!important;} }
+nav.main-links>a.mobile-event-link{display:none!important;}
+@media (max-width:900px){
+  nav.main-links>a.mobile-event-link{display:flex!important;align-items:center;min-height:44px;padding:13px 14px!important;}
+}
+/* Manager page mobile/tablet refinements requested for V25. */
+@media (max-width:980px){
+  #page-manager .eyebrow-tag{white-space:nowrap;display:inline-flex;max-width:100%;font-size:.74rem;line-height:1.1;}
+  #page-manager .hero > .wrap{grid-template-columns:1fr!important;}
+  #page-manager .hero h1{font-size:clamp(1.65rem,5.8vw,2.25rem)!important;line-height:1.12!important;max-width:28ch!important;width:100%!important;}
+  #page-manager .manager-portrait{width:calc(100% - 24px)!important;max-width:1080px!important;margin:0 auto 30px!important;aspect-ratio:16/9!important;height:auto!important;border-radius:18px;overflow:hidden;}
+  #page-manager .manager-portrait img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;display:block;}
+}
+@media (min-width:981px){
+  #page-manager .manager-portrait{width:min(100%,1080px)!important;max-width:1080px!important;margin-left:auto!important;margin-right:auto!important;aspect-ratio:16/9!important;height:auto!important;overflow:hidden;}
+  #page-manager .manager-portrait img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;}
+}
 </style>
 
 <script type="application/ld+json">
@@ -718,6 +738,7 @@ nav.main-links>a{display:inline-flex!important;align-items:center;white-space:no
       <a href="/wpa/traduction/" data-page="traduction" onclick="return go('traduction')">Traduction</a>
       <a href="/wpa/manager/" data-page="manager" onclick="return go('manager')">Mot du Manager</a>
       <a href="/wpa/contact/" data-page="contact" onclick="return go('contact')">Contact</a>
+      <a href="/wpa/events/" class="mobile-event-link" aria-label="Événements — session octobre 2026">Événements</a>
       <div class="mobile-contact-row" aria-label="Nous contacter et nous suivre">
         <a class="sc-mail" href="mailto:contact.hnrconsulting@gmail.com" aria-label="Email HNR Consulting" title="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18v12H3z"></path><path d="m3 7 9 6 9-6"></path></svg></a>
         <a class="sc-phone" href="tel:+24174147051" aria-label="Téléphone HNR Consulting" title="Téléphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6.7 3.5 9.2 3l2 4.6-1.9 1.6a14.4 14.4 0 0 0 5.5 5.5l1.6-1.9 4.6 2-.5 2.5a2 2 0 0 1-2.1 1.6C10.5 18.6 5.4 13.5 5.1 5.6a2 2 0 0 1 1.6-2.1Z"></path></svg></a>
@@ -1489,8 +1510,8 @@ nav.main-links>a{display:inline-flex!important;align-items:center;white-space:no
           <li><a href="/wpa/traduction/" data-page="traduction" onclick="return go('traduction')">Traduction</a></li>
           <li><a href="/wpa/manager/" data-page="manager" onclick="return go('manager')">Mot du Manager</a></li>
           <li><a href="/wpa/contact/" data-page="contact" onclick="return go('contact')">Contact</a></li>
-          <li><a href="/wpa/faq/" data-page="faq" onclick="return go('faq')">FAQ</a></li>
           <li><a href="/wpa/events/">Événements</a></li>
+          <li><a href="/wpa/faq/" data-page="faq" onclick="return go('faq')">FAQ</a></li>
         </ul>
       </div>
       <div>
@@ -1541,7 +1562,7 @@ function getPageUrl(id){
 function go(id, anchor){
   var pageTitles = {
     accueil: 'Formation & Traduction — HNR Consulting', formation: 'Formation — HNR Consulting', traduction: 'Traduction — HNR Consulting', manager: 'Mot du Manager — HNR Consulting',
-    contact: 'Contact — HNR Consulting', inscription: 'Inscription — HNR Consulting', devis: 'Demander un devis — HNR Consulting', faq: 'FAQ — HNR Consulting', admin: 'Administration — HNR Consulting', verify: 'Vérification — HNR Consulting'
+    contact: 'Contact — HNR Consulting', inscription: 'Inscription — HNR Consulting', devis: 'Demander un devis — HNR Consulting', faq: 'FAQ — HNR Consulting', admin: 'Administration — HNR Consulting', verify: 'Vérification — HNR Consulting', events: 'Formation anglais — HNR Consulting'
   };
   var pageDescriptions = {
     accueil: 'Formation en anglais des affaires et traduction professionnelle français ↔ anglais, pour les entreprises, administrations et particuliers.',
@@ -1553,7 +1574,7 @@ function go(id, anchor){
     inscription: 'Inscrivez-vous à une formation en anglais des affaires et renseignez vos informations pour préparer votre parcours avec HNR Consulting.',
     devis: 'Demandez un devis de traduction en précisant vos documents et vos besoins pour recevoir une proposition adaptée à votre projet.',
     admin: 'Espace administrateur de HNR Consulting dédié au suivi et à la gestion des opérations internes du site.',
-    verify: 'Vérifiez l’authenticité d’un document délivré par HNR Consulting grâce aux informations ou au QR Code prévu à cet effet.'
+    verify: 'Vérifiez l’authenticité d’un document délivré par HNR Consulting grâce aux informations ou au QR Code prévu à cet effet.', events: 'Formation anglais — Session octobre 2026 à Libreville, proposée par HNR Consulting.'
   };
   if(!pageTitles[id]) id='accueil';
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -2716,6 +2737,22 @@ function buildSiteSearchIndex(){
       siteSearchItems.push({page:id,label:text,snippet:snippet.slice(0,180),anchor:anchor});
     });
   });
+  // Dedicated Events page: index its main title, sections and important content.
+  [
+    {page:'events',label:'Formation anglais — HNR Consulting',snippet:'Session octobre 2026 à Libreville : anglais conversationnel ou professionnel.',anchor:'',terms:'formation anglais octobre 2026 session anglais conversationnel professionnel'},
+    {page:'events',label:'Informations essentielles — Session octobre 2026',snippet:'Début 05 octobre 2026, durée 3 mois, présentiel à Libreville.',anchor:'informations',terms:'date durée horaires jours format lieu organisateur'},
+    {page:'events',label:'Pourquoi choisir cette formation ?',snippet:'Expression orale, confiance, vocabulaire, compréhension et communication professionnelle.',anchor:'pourquoi',terms:'bénéfices anglais confiance vocabulaire compréhension'},
+    {page:'events',label:'Choisissez le parcours qui correspond à vos objectifs',snippet:'Anglais conversationnel et Anglais professionnel, avec coûts détaillés.',anchor:'parcours',terms:'parcours prix inscription mensualité examen coût total'},
+    {page:'events',label:'À qui s’adresse cette formation ?',snippet:'Étudiants, chercheurs d’emploi, professionnels et toute personne motivée.',anchor:'public',terms:'étudiants chercheurs emploi professionnels loisirs voyages tourisme'},
+    {page:'events',label:'Notre objectif, vous aider à atteindre les vôtres',snippet:'Objectifs de progression en anglais et mise en pratique dans des situations concrètes.',anchor:'objectifs',terms:'objectifs prononciation fluidité confiance vocabulaire technique'},
+    {page:'events',label:'Comment se déroule la formation ?',snippet:'Inscription, démarrage, formation, progression, fin de session et examen.',anchor:'deroulement',terms:'déroulement timeline inscription démarrage progression examen'},
+    {page:'events',label:'Les dates à retenir',snippet:'05 octobre 2026 au 04 décembre 2026, mardi et vendredi.',anchor:'dates',terms:'dates horaires mardi vendredi décembre octobre'},
+    {page:'events',label:'Où se déroule la formation ?',snippet:'Carrefour Boulingui, près de l’ANUTTC, Libreville, Gabon.',anchor:'lieu',terms:'lieu libreville carrefour boulingui ANUTTC itinéraire'},
+    {page:'events',label:'Une formation proposée par HNR Consulting',snippet:'Formation en anglais, communication multiculturelle et traduction français ↔ anglais.',anchor:'organisateur',terms:'HNR Consulting organisme formation anglais traduction'},
+    {page:'events',label:'Informations pratiques',snippet:'Événement, type, dates, durée, horaires, format, lieu et parcours.',anchor:'pratique',terms:'informations pratiques événement certifiante présentiel'},
+    {page:'events',label:'Questions fréquentes — Session octobre 2026',snippet:'Réponses sur les dates, horaires, parcours, tarifs et inscription.',anchor:'faq',terms:'FAQ questions fréquentes tarifs inscription horaires'},
+    {page:'events',label:'Votre prochaine étape commence ici.',snippet:'Choisissez votre parcours et inscrivez-vous à la session d’octobre 2026.',anchor:'inscription-cta',terms:'inscrire inscription session octobre 2026'}
+  ].forEach(function(x){siteSearchItems.push(x);});
   // Add high-value service terms and actions even when they are not headings.
   [
     {page:'formation',label:'Anglais standard / conversationnel',snippet:'Formation en anglais standard à dominante conversationnelle.',anchor:'',terms:'anglais standard conversationnel'},
@@ -2738,6 +2775,7 @@ function searchNavigate(page,anchor){
   var box=document.getElementById('siteSearch'),btns=document.querySelectorAll('.nav-search-toggle');
   if(box) box.classList.remove('open');
   btns.forEach(function(btn){btn.setAttribute('aria-expanded','false');});
+  if(page==='events'){ location.href='/wpa/events/'+(anchor?'#'+encodeURIComponent(anchor):''); return; }
   go(page,anchor||'');
 }
 function renderSearchResults(query){
@@ -2786,7 +2824,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <script>
 (function(){
   var pathMap = {
-    '/wpa/':'accueil','/wpa/index.html':'accueil','/wpa/formation/':'formation','/wpa/traduction/':'traduction','/wpa/manager/':'manager','/wpa/contact/':'contact','/wpa/inscription/':'inscription','/wpa/devis/':'devis','/wpa/faq/':'faq','/wpa/admin/':'admin','/wpa/verify/':'verify'
+    '/wpa/':'accueil','/wpa/index.html':'accueil','/wpa/formation/':'formation','/wpa/traduction/':'traduction','/wpa/manager/':'manager','/wpa/contact/':'contact','/wpa/inscription/':'inscription','/wpa/devis/':'devis','/wpa/faq/':'faq','/wpa/admin/':'admin','/wpa/verify/':'verify','/wpa/events/':'events'
   };
   function pageFromLocation(){
     var p=location.pathname.replace(/\/+$/,'/') || '/';

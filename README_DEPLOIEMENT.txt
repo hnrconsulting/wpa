@@ -1,53 +1,74 @@
-HNR CONSULTING — ÉVÉNEMENT FORMATION ANGLAIS — OCTOBRE 2026
+HNR CONSULTING — V25 / SESSION OCTOBRE 2026
+==============================================
 
-CONTENU À INTÉGRER
-==================
+BASE : V24 + package événement V2, avec intégration native de la page Événements.
 
-1. REMPLACER LE index.html RACINE
----------------------------------
-Utiliser le fichier `index.html` de ce package à la racine du dépôt GitHub.
-Il reprend V24 et ajoute uniquement le lien « Événements » dans le FOOTER.
-Le menu principal/header n’est pas modifié pour ajouter Événements.
+1) REMPLACER À LA RACINE
+-------------------------
+Remplacer le index.html actuel par :
+    index.html
 
-2. AJOUTER / REMPLACER LE DOSSIER events/
-------------------------------------------
-Copier intégralement `events/` dans la racine du dépôt.
-La page sera disponible à : /wpa/events/
+Cette version conserve V24 et ajoute/modifie :
+- suppression de l'affichage du téléphone dans la ligne du header desktop ;
+- lien « Événements » dans le hamburger sur smartphone/tablette ;
+- lien « Événements » dans le footer, immédiatement au-dessus de FAQ ;
+- indexation dans la recherche interne des titres/sections et contenus clés de la page Événements ;
+- ajustements de « Le mot du Manager Général » : tag sur une ligne, titre limité à 2 lignes sur mobile/tablette et image en paysage presque pleine largeur.
 
-Fichiers image :
-- events/assets/formation-anglais-octobre-2026.webp : HERO, classe de formation.
-- events/assets/conference-hnr-anglais.webp : section Objectifs.
-- events/assets/equipe-multiculturelle-hnr.webp : section Organisateur.
-- events/assets/event-og.jpg : Open Graph / partage social (1200×630).
+2) AJOUTER LE DOSSIER EVENTS
+----------------------------
+Ajouter :
+    events/index.html
+    events/assets/formation-anglais-octobre-2026.webp
+    events/assets/conference-hnr-anglais.webp
+    events/assets/equipe-multiculturelle-hnr.webp
+    events/assets/event-og.jpg
+    events/assets/montserrat.ttf
 
-Les trois images fournies ont été optimisées en WebP et redimensionnées pour
-les usages web. Le fichier OG est optimisé en JPEG.
+AUCUN hnr-logo.webp n'est nécessaire dans events/assets/.
+Le logo du header/footer de la page Événements est repris du même logo embarqué dans le code V24.
 
-3. POLICE ET LOGO
+3) PAGE ÉVÉNEMENT
 -----------------
-Conserver dans `events/assets/` :
-- hnr-logo.webp
-- montserrat.ttf
+URL : https://hnrconsulting.github.io/wpa/events/
 
-4. URL D’INSCRIPTION
---------------------
-Dans `events/index.html`, tous les CTA d’inscription utilisent :
-const INSCRIPTION_URL = "/wpa/inscription/";
-Modifier uniquement cette constante si l’URL change.
+Le header et le footer de events/index.html reprennent le balisage du site HNR.
+Le lien « Événements » du menu principal est caché sur ordinateur et visible dans le hamburger sur mobile/tablette.
 
-5. COORDONNÉES ET LIEU
-----------------------
-Téléphone : +241 74 14 70 51
-Email : contact.hnrconsulting@gmail.com
-Lieu : Carrefour Boulingui, près de l’ANUTTC — Libreville, Gabon
-Aucune coordonnée GPS n’est ajoutée.
+4) SEO
+-------
+<title>, og:title et twitter:title :
+    Formation anglais — HNR Consulting
 
-6. SITEMAP
+La page conserve son canonical /wpa/events/ et ses données structurées Event.
+
+5) STICKY CTA
+-------------
+Le CTA persistant est uniquement mobile.
+Il est masqué dans le Hero, apparaît après le Hero et disparaît à l'approche du CTA final.
+Son fond blanc a été réduit (semi-transparent et moins épais).
+
+6) HORAIRES
+-----------
+Les heures « 09h00 – 11h00 » et « 15h00 – 17h00 » utilisent la même classe de style (bleu, gras).
+Les intitulés « Anglais conversationnel » et « Anglais professionnel » utilisent la même classe normale.
+
+7) LIEU
+--------
+Le bloc de disclaimer « La page n'intègre pas de coordonnées GPS non fournies » a été supprimé.
+Aucune coordonnée GPS n'est inventée.
+
+8) IMAGE APRÈS LE BLOC LIEU
+----------------------------
+L'illustration de l'équipe est affichée dans un cadre 4:5 avec object-fit: contain afin de conserver la vue entière.
+
+9) SITEMAP
 ----------
-Le `sitemap.xml` fourni contient /wpa/events/. Si le dépôt possède déjà un
-sitemap officiel, fusionner cette seule URL au lieu de remplacer le sitemap.
+Le sitemap.xml fourni conserve les URLs du sitemap V2 et inclut /wpa/events/.
 
-7. IMPORTANT
-------------
-Ne pas déplacer les fichiers du dossier `events/assets/`.
-Ne pas créer de formulaire ou de paiement sur la page événement.
+10) IMPORTANT
+-------------
+Les CTA d'inscription de la page Événements utilisent :
+    /wpa/inscription/
+
+Aucun formulaire d'inscription ou paiement parallèle n'est présent sur la page Événements.
