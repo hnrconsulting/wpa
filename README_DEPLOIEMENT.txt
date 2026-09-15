@@ -1,52 +1,53 @@
 HNR CONSULTING — ÉVÉNEMENT FORMATION ANGLAIS — OCTOBRE 2026
 
-FICHIERS À AJOUTER / REMPLACER
+CONTENU À INTÉGRER
+==================
 
-1) Remplacer le index.html actuel à la racine du dépôt par :
-   index.html
-   Cette version est basée sur V24 et ajoute uniquement le lien « Événements »
-   dans le footer. Le menu principal n'est pas modifié.
+1. REMPLACER LE index.html RACINE
+---------------------------------
+Utiliser le fichier `index.html` de ce package à la racine du dépôt GitHub.
+Il reprend V24 et ajoute uniquement le lien « Événements » dans le FOOTER.
+Le menu principal/header n’est pas modifié pour ajouter Événements.
 
-2) Ajouter le dossier :
-   events/
-   avec :
-   events/index.html
-   events/assets/hnr-logo.webp
-   events/assets/montserrat.ttf
-   events/assets/formation-anglais-octobre-2026.webp
-   events/assets/formation-anglais-equipe.webp
-   events/assets/hnr-consulting-equipe.webp
-   events/assets/event-og.jpg
+2. AJOUTER / REMPLACER LE DOSSIER events/
+------------------------------------------
+Copier intégralement `events/` dans la racine du dépôt.
+La page sera disponible à : /wpa/events/
 
-3) sitemap.xml : remplacer le sitemap actuel si vous souhaitez indexer immédiatement
-   la nouvelle URL /wpa/events/.
+Fichiers image :
+- events/assets/formation-anglais-octobre-2026.webp : HERO, classe de formation.
+- events/assets/conference-hnr-anglais.webp : section Objectifs.
+- events/assets/equipe-multiculturelle-hnr.webp : section Organisateur.
+- events/assets/event-og.jpg : Open Graph / partage social (1200×630).
 
-URL DE LA PAGE
-https://hnrconsulting.github.io/wpa/events/
+Les trois images fournies ont été optimisées en WebP et redimensionnées pour
+les usages web. Le fichier OG est optimisé en JPEG.
 
-VARIABLE PRINCIPALE
-Dans events/index.html :
+3. POLICE ET LOGO
+-----------------
+Conserver dans `events/assets/` :
+- hnr-logo.webp
+- montserrat.ttf
+
+4. URL D’INSCRIPTION
+--------------------
+Dans `events/index.html`, tous les CTA d’inscription utilisent :
 const INSCRIPTION_URL = "/wpa/inscription/";
-Modifier cette constante si l'URL de la page Inscription change.
-Tous les CTA d'inscription sont reliés à cette constante.
+Modifier uniquement cette constante si l’URL change.
 
-IMAGES
-Les images sont des versions optimisées issues des visuels déjà présents dans V24.
-Elles sont stockées localement dans events/assets/ afin d'éviter les dépendances
-à des services d'image externes.
+5. COORDONNÉES ET LIEU
+----------------------
+Téléphone : +241 74 14 70 51
+Email : contact.hnrconsulting@gmail.com
+Lieu : Carrefour Boulingui, près de l’ANUTTC — Libreville, Gabon
+Aucune coordonnée GPS n’est ajoutée.
 
-COORDONNÉES
-Les coordonnées affichées dans la page sont :
-+241 74 14 70 51
-contact.hnrconsulting@gmail.com
+6. SITEMAP
+----------
+Le `sitemap.xml` fourni contient /wpa/events/. Si le dépôt possède déjà un
+sitemap officiel, fusionner cette seule URL au lieu de remplacer le sitemap.
 
-LIEU
-Carrefour Boulingui, près de l'ANUTTC — Libreville, Gabon.
-Le bouton « Voir l'itinéraire » utilise une recherche Google Maps textuelle ; aucune
-coordonnée GPS n'est inventée.
-
-NOTES
-- La page événement est autonome et ne crée aucun formulaire ni paiement parallèle.
-- Le lien « Événements » n'est pas ajouté au header : il reste uniquement dans le footer,
-  conformément au cahier des charges.
-- Le CTA mobile fixe disparaît lorsque la section finale d'inscription entre dans le viewport.
+7. IMPORTANT
+------------
+Ne pas déplacer les fichiers du dossier `events/assets/`.
+Ne pas créer de formulaire ou de paiement sur la page événement.
