@@ -1,45 +1,83 @@
 HNR CONSULTING — V25 / SESSION OCTOBRE 2026
 ==============================================
 
-BASE : V24 + package événement V2.
+BASE : V24 + package événement V2, avec intégration native de la page Événements.
 
-FICHIERS À REMPLACER
---------------------
-1. Racine du dépôt : remplacer index.html par celui de ce package.
-   Cette version conserve V24 et ajoute :
-   - lien « Événements » dans le hamburger uniquement sur smartphone/tablette ;
-   - lien « Événements » dans le footer, immédiatement au-dessus de FAQ ;
-   - recherche du site enrichie avec les titres/sections de la page Événements ;
-   - suppression du téléphone du header desktop ;
-   - ajustements de la page « Mot du Manager Général » sur mobile/tablette et image paysage.
+1) REMPLACER À LA RACINE
+-------------------------
+Remplacer le index.html actuel par :
+    index.html
 
-2. Ajouter events/index.html et tout events/assets/.
+Cette version conserve V24 et ajoute/modifie :
+- suppression de l'affichage du téléphone dans la ligne du header desktop ;
+- lien « Événements » dans le hamburger sur smartphone/tablette ;
+- lien « Événements » dans le footer, immédiatement au-dessus de FAQ ;
+- indexation dans la recherche interne des titres/sections et contenus clés de la page Événements ;
+- ajustements de « Le mot du Manager Général » : tag sur une ligne, titre limité à 2 lignes sur mobile/tablette et image en paysage presque pleine largeur.
 
-IMPORTANT : aucun hnr-logo.webp n'est requis dans events/assets/. Le logo du header/footer est celui embarqué dans le code V24, comme demandé.
+2) AJOUTER LE DOSSIER EVENTS
+----------------------------
+Ajouter :
+    events/index.html
+    events/assets/formation-anglais-octobre-2026.webp
+    events/assets/conference-hnr-anglais.webp
+    events/assets/equipe-multiculturelle-hnr.webp
+    events/assets/event-og.jpg
+    events/assets/montserrat.ttf
 
-URL PAGE ÉVÉNÉMENT : https://hnrconsulting.github.io/wpa/events/
+AUCUN hnr-logo.webp n'est nécessaire dans events/assets/.
+Le logo du header/footer de la page Événements est repris du même logo embarqué dans le code V24.
 
-IMAGES EVENT :
-- formation-anglais-octobre-2026.webp : Hero
-- conference-hnr-anglais.webp : objectifs
-- equipe-multiculturelle-hnr.webp : organisateur, affichage 4:5 sans recadrage
-- event-og.jpg : Open Graph 1200x630
+3) PAGE ÉVÉNEMENT
+-----------------
+URL : https://hnrconsulting.github.io/wpa/events/
 
-SEO : titre <title>, og:title et twitter:title = « Formation anglais — HNR Consulting ».
+Le header et le footer de events/index.html reprennent le balisage du site HNR.
+Le lien « Événements » du menu principal est caché sur ordinateur et visible dans le hamburger sur mobile/tablette.
 
-STICKY CTA : uniquement smartphone, invisible dans le hero et masqué à l'approche de la section finale.
+4) SEO
+-------
+<title>, og:title et twitter:title :
+    Formation anglais — HNR Consulting
 
-LIEU : le bloc « Carrefour Boulingui... La page n'intègre pas... » a été supprimé.
+La page conserve son canonical /wpa/events/ et ses données structurées Event.
 
-HORAIRES : les deux créneaux horaires partagent la même classe de style (bleu + gras), et les intitulés de parcours partagent une classe normale.
+5) STICKY CTA
+-------------
+Le CTA persistant est uniquement mobile.
+Il est masqué dans le Hero, apparaît après le Hero et disparaît à l'approche du CTA final.
+Son fond blanc a été réduit (semi-transparent et moins épais).
 
-INSCRIPTION : les CTA utilisent /wpa/inscription/ et aucun formulaire parallèle n'est créé.
+6) HORAIRES
+-----------
+Les heures « 09h00 – 11h00 » et « 15h00 – 17h00 » utilisent la même classe de style (bleu, gras).
+Les intitulés « Anglais conversationnel » et « Anglais professionnel » utilisent la même classe normale.
+
+7) LIEU
+--------
+Le bloc de disclaimer « La page n'intègre pas de coordonnées GPS non fournies » a été supprimé.
+Aucune coordonnée GPS n'est inventée.
+
+8) IMAGE APRÈS LE BLOC LIEU
+----------------------------
+L'illustration de l'équipe est affichée dans un cadre 4:5 avec object-fit: contain afin de conserver la vue entière.
+
+9) SITEMAP
+----------
+Le sitemap.xml fourni conserve les URLs du sitemap V2 et inclut /wpa/events/.
+
+10) IMPORTANT
+-------------
+Les CTA d'inscription de la page Événements utilisent :
+    /wpa/inscription/
+
+Aucun formulaire d'inscription ou paiement parallèle n'est présent sur la page Événements.
 
 
-V26 — CORRECTION HEADER / MOBILE / RECHERCHE
----------------------------------------------
-La page events/index.html a été corrigée pour reprendre le comportement du header HNR :
-- loupe confinée dans le panneau de recherche ;
-- icônes de contact/réseaux confinées dans le menu mobile ;
-- lien Événements masqué sur desktop et visible dans le hamburger sur mobile/tablette ;
-- aucun téléphone/réseau social affiché sur la ligne horizontale desktop.
+CORRECTION V26 — ROBUSTESSE HEADER / RECHERCHE
+-----------------------------------------------
+- Correction du bug de page quasi vide : les éléments .reveal sont désormais visibles par défaut et les animations ne peuvent plus masquer le contenu si JavaScript rencontre une erreur.
+- Suppression des attributs onclick qui appelaient des fonctions non globales (toggleNav/toggleSiteSearch). Les événements sont gérés proprement par le script de la page.
+- Restauration du CSS complet du panneau de recherche et gestion correcte de l'attribut hidden.
+- Taille des SVG de recherche et des icônes sociales verrouillée pour éviter les agrandissements anormaux.
+- Suppression de la référence favicon vers un logo absent du dossier assets.
