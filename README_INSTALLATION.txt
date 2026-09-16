@@ -1,4 +1,4 @@
-HNR CONSULTING — SITE UNIFIÉ FINAL V27
+HNR CONSULTING — SITE UNIFIÉ FINAL V28
 =====================================
 
 ARCHITECTURE
@@ -14,7 +14,6 @@ Si l’ancien dépôt est supprimé, téléversez TOUT le contenu de ce package 
 Structure :
   index.html
   og-image.jpg
-  event-og.jpg
   robots.txt
   sitemap.xml
   README_INSTALLATION.txt
@@ -29,7 +28,7 @@ Structure :
   verify/index.html
   events/index.html
 
-Les images et la police nécessaires au rendu applicatif restent intégrées directement dans index.html. Les deux images og-image.jpg et event-og.jpg sont à la racine uniquement pour fournir aux crawlers sociaux des URLs publiques d’images Open Graph réellement accessibles.
+Les images et la police nécessaires au rendu applicatif restent intégrées directement dans index.html. L’image og-image.jpg est conservée à la racine comme image Open Graph publique accessible aux crawlers sociaux et utilisée par toutes les pages, y compris Événements.
 
 ÉVÉNEMENTS
 ----------
@@ -42,10 +41,14 @@ Le CTA sticky est limité à la page Événements et aux smartphones : il appara
 
 SEO / OPEN GRAPH
 ----------------
-Les titres suivent le format « [Tag du hero] | HNR Consulting ».
+Les titres suivent le format « [Tag du hero] | HNR Consulting ». La page Événements utilise « Session Octobre 2026 | HNR Consulting ».
 Les descriptions sont adaptées à chaque page.
-L’image Open Graph standard est /og-image.jpg. L’image Open Graph de la page Événements uniquement est /event-og.jpg.
+L’image Open Graph standard /og-image.jpg est utilisée par toutes les pages, y compris Événements. L’ancienne image Open Graph spécifique à Événements a été supprimée.
 Les métadonnées canoniques, Open Graph, Twitter Cards, robots, sitemap et données structurées sont incluses.
+
+POP-UP PÔLE TRADUCTION
+----------------------
+Une version JPEG optimisée de l’image promotionnelle fournie (1280 × 853 px, 194 580 octets) est intégrée directement dans index.html. Sur la page Pôle Traduction, le pop-up s’ouvre 3 secondes après l’ouverture de la page, avec une animation de glissement depuis le haut. Le bouton X apparaît 3 secondes après l’ouverture du pop-up. Seul ce bouton ferme le pop-up, avec une animation de retour vers le haut. Un clic sur l’image ouvre la page Devis.
 
 INSCRIPTION / DEVIS
 -------------------
