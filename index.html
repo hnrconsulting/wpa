@@ -30,6 +30,7 @@
 <!-- Police Montserrat intégrée localement plus bas (voir @font-face) -->
 <script src="jspdf.umd.min.js"></script>
 <script src="qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 /* Police Montserrat — Copyright 2024 The Montserrat.Git Project Authors — SIL Open Font License 1.1 (intégration embarquée autorisée) */
 @font-face{
@@ -694,7 +695,7 @@ nav.main-links>a{display:inline-flex!important;align-items:center;white-space:no
 .hnr-announcement-item{display:block;flex:0 0 auto;padding-right:80px;font-size:.88rem;line-height:42px;font-weight:500;}
 .hnr-announcement-item strong{font-weight:800;}
 .hnr-announcement:hover .hnr-announcement-track{animation-play-state:paused;}
-@keyframes hnrAnnouncementScroll{from{transform:translateX(0);}to{transform:translateX(calc(-1 * var(--hnr-announcement-distance, 50%)));}}
+@keyframes hnrAnnouncementScroll{from{transform:translateX(var(--hnr-announcement-start, 100vw));}to{transform:translateX(calc(-1 * var(--hnr-announcement-distance, 50%)));}}
 @media(max-width:600px){
   .hnr-announcement{height:40px;line-height:40px;}
   .hnr-announcement-item{font-size:.78rem;line-height:40px;padding-right:72px;}
@@ -2518,21 +2519,23 @@ function qrPayloadForDevis(d){
 
 function decodeBase64Url(s){try{var b64=s.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4)b64+='=';return JSON.parse(decodeURIComponent(escape(atob(b64))));}catch(e){return null;}}
 function drawDevisQr(payload,size,level){
-  /* Génère un QR haute définition avec une vraie zone blanche de silence autour
-     du code. Cette marge améliore nettement la lecture par caméra et par
-     détection depuis une photo de document imprimé. */
-  var px=Math.max(360,Number(size)||360), pad=Math.round(px*.10), inner=px-(pad*2), holder=document.createElement('div');
+  /* QR haute définition : grande matrice source, contraste noir/blanc et
+     zone de silence généreuse pour maximiser la reconnaissance caméra/photo. */
+  var px=Math.max(800,Number(size)||800), pad=Math.round(px*.14), inner=px-(pad*2), holder=document.createElement('div');
   holder.style.cssText='position:fixed;left:-10000px;top:-10000px;width:'+inner+'px;height:'+inner+'px;opacity:0;pointer-events:none;background:#fff;';
   document.body.appendChild(holder);
   try{
-    var QR=window.QRCode||QRCode, correction=(level==='L'&&QR.CorrectLevel&&QR.CorrectLevel.L)||((QR.CorrectLevel&&QR.CorrectLevel.M)||1);
-    new QR(holder,{text:payload,width:inner,height:inner,typeNumber:0,correctLevel:correction,colorDark:'#004A93',colorLight:'#ffffff'});
+    var QR=window.QRCode;
+    if(!QR) throw new Error('QRCode library unavailable');
+    var correction=(QR.CorrectLevel&&QR.CorrectLevel.H)||3;
+    new QR(holder,{text:String(payload||''),width:inner,height:inner,typeNumber:0,correctLevel:correction,colorDark:'#004A93',colorLight:'#ffffff'});
     var qrCanvas=holder.querySelector('canvas');
     if(!qrCanvas){holder.remove();return null;}
-    var out=document.createElement('canvas');out.width=px;out.height=px;var ctx=out.getContext('2d');
-    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,px,px);ctx.drawImage(qrCanvas,pad,pad,inner,inner);
+    var out=document.createElement('canvas');out.width=px;out.height=px;
+    var ctx=out.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.fillStyle='#fff';ctx.fillRect(0,0,px,px);
+    ctx.drawImage(qrCanvas,pad,pad,inner,inner);
     var img=out.toDataURL('image/png');holder.remove();return img;
-  }catch(e){holder.remove();return null;}
+  }catch(e){holder.remove();console.error('QR generation error',e);return null;}
 }
 function pdfText(doc,str,x,y,size,color,style,align,maxWidth){
   style=style||'normal'; size=size||9; color=color||[18,50,98];
@@ -2680,7 +2683,7 @@ function downloadDevisPdf(data){
     text('Montant HT',tx+6,y+17,6.9,DARK);text(money(d.totalHT),tx+tw-6,y+17,6.9,DARK,'normal','right');
     text('TPS 9,5 %',tx+6,y+25,6.9,DARK);text(money(d.tps),tx+tw-6,y+25,6.9,DARK,'normal','right');
     doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.roundedRect(tx+4,y+29,tw-8,10,1.5,1.5,'F');
-    text('TOTAL TTC',tx+6,y+35.5,7.2,WHITE,'bold');text(money(d.ttc),tx+tw-9,y+36,7.7,WHITE,'bold','right');
+    var totalTtcY=y+35.5; text('TOTAL TTC',tx+6,totalTtcY,7.2,WHITE,'bold'); text(money(d.ttc),tx+tw-9,totalTtcY,7.7,WHITE,'bold','right');
 
     y+=50;
     var lowerH=65, split=118;
@@ -2693,9 +2696,9 @@ function downloadDevisPdf(data){
 
     var qr=drawDevisQr(qrPayloadForDevis(d));
     var ax=ML+split+7, aw=TW-split-14;
-    if(qr){try{doc.addImage(qr,'PNG',ax+((aw-31)/2),y+7,31,31);}catch(e){}}
-    text('SIGNATURE ÉLECTRONIQUE',ax+aw/2,y+44,7.1,BLUE,'bold','center',aw);
-    text('QR Code de vérification',ax+aw/2,y+51,6.5,MUTED,'italic','center',aw);
+    if(qr){try{doc.addImage(qr,'PNG',ax+((aw-36)/2),y+6,36,36);}catch(e){}}
+    text('SIGNATURE ÉLECTRONIQUE',ax+aw/2,y+45,7.1,BLUE,'bold','center',aw);
+    text('QR Code de vérification',ax+aw/2,y+53,6.5,MUTED,'italic','center',aw);
 
 
     /* Aucun bloc de validité ni autre information textuelle n'est conservé en bas de page.
@@ -2878,10 +2881,17 @@ function scanQrImage(e){
     var img=new Image();
     img.onload=async function(){
       var c=document.getElementById('qrScanCanvas');
-      var max=2200, scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+      var max=2600, scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
       c.width=Math.max(1,Math.round(img.naturalWidth*scale)); c.height=Math.max(1,Math.round(img.naturalHeight*scale));
       var ctx=c.getContext('2d',{willReadFrequently:true}); ctx.drawImage(img,0,0,c.width,c.height);
       var found=await decodeQrFromCanvas(c);
+      /* Second pass on the central area improves recognition when the photo contains a large page margin. */
+      if(!found){
+        var side=Math.floor(Math.min(c.width,c.height)*.82), sx=Math.floor((c.width-side)/2), sy=Math.floor((c.height-side)/2);
+        var crop=document.createElement('canvas'); crop.width=side; crop.height=side;
+        var cc=crop.getContext('2d',{willReadFrequently:true}); cc.drawImage(c,sx,sy,side,side,0,0,side,side);
+        found=await decodeQrFromCanvas(crop);
+      }
       if(!found) status.textContent='QR Code non reconnu. Essayez une image nette, sans reflet et avec le QR Code entièrement visible.';
       else status.textContent='QR Code reconnu.';
     };
@@ -2990,7 +3000,10 @@ function renderSearchResults(query){
     var item=track.querySelector('.hnr-announcement-item');
     if(!item)return;
     var width=item.getBoundingClientRect().width;
-    if(width>0) track.style.setProperty('--hnr-announcement-distance',width+'px');
+    if(width>0){
+      track.style.setProperty('--hnr-announcement-distance',width+'px');
+      track.style.setProperty('--hnr-announcement-start','100vw');
+    }
   }
   document.addEventListener('DOMContentLoaded',function(){
     initAnnouncementMarquee();
