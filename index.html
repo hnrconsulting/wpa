@@ -2629,7 +2629,7 @@ function downloadDevisPdf(data){
       text(d.nom+(d.societe?' — '+d.societe:''),92,61,8.2,DARK,'bold',null,103);
       text('Adresse : '+d.adresse,92,67,6.8,MUTED,'normal',null,103);
       /* Coordonnées client : deux zones distinctes sur UNE seule ligne.
-         Une marge de sécurité de 8 mm sépare volontairement le téléphone
+         Une marge de sécurité de 3 mm sépare volontairement le téléphone
          et l'e-mail afin d'éviter tout chevauchement, même avec des
          coordonnées relativement longues. La taille est réduite au besoin
          pour conserver chaque coordonnée sur une seule ligne. */
@@ -2642,7 +2642,7 @@ function downloadDevisPdf(data){
         }
         doc.text(String(value||''),x,y);
       }
-      textFitSingleLine('Tél : '+d.tel,92,73,45,6.8,5.4);
+      textFitSingleLine('Tél : '+d.tel,92,73,50,6.8,5.4);
       textFitSingleLine('Email : '+d.email,145,73,50,6.8,5.4);
     }
     function drawTitle(){
