@@ -2628,11 +2628,10 @@ function downloadDevisPdf(data){
       text('CLIENT',92,53,7.0,BLUE,'bold');
       text(d.nom+(d.societe?' — '+d.societe:''),92,61,8.2,DARK,'bold',null,103);
       text('Adresse : '+d.adresse,92,67,6.8,MUTED,'normal',null,103);
-      /* Coordonnées client : deux zones distinctes sur UNE seule ligne.
-         Une marge de sécurité de 3 mm sépare volontairement le téléphone
-         et l'e-mail afin d'éviter tout chevauchement, même avec des
-         coordonnées relativement longues. La taille est réduite au besoin
-         pour conserver chaque coordonnée sur une seule ligne. */
+      /* Coordonnées client : une seule ligne avec un espacement constant
+         de cinq espaces typographiques entre la fin du téléphone et le début
+         de l'e-mail. La position de l'e-mail suit donc réellement la longueur
+         du numéro, au lieu d'être fixée à une colonne. */
       function textFitSingleLine(value,x,y,maxW,maxSize,minSize){
         var size=maxSize||6.8, min=minSize||5.2;
         setFont('normal',size,MUTED);
@@ -2641,9 +2640,15 @@ function downloadDevisPdf(data){
           setFont('normal',size,MUTED);
         }
         doc.text(String(value||''),x,y);
+        return {size:size,width:doc.getTextWidth(String(value||''))};
       }
-      textFitSingleLine('Tél : '+d.tel,92,73,50,6.8,5.4);
-      textFitSingleLine('Email : '+d.email,145,73,50,6.8,5.4);
+      var telMeta=textFitSingleLine('Tél : '+d.tel,92,73,103,6.8,5.4);
+      var phoneEnd=92+telMeta.width;
+      setFont('normal',telMeta.size,MUTED);
+      var fiveSpaces=doc.getTextWidth('     ');
+      var emailX=phoneEnd+fiveSpaces;
+      var emailMaxW=Math.max(20,195-emailX);
+      textFitSingleLine('Email : '+d.email,emailX,73,emailMaxW,6.8,5.4);
     }
     function drawTitle(){
       var title='TRADUCTION DE DOCUMENTS ['+String(d.langues||'').toUpperCase()+']';
